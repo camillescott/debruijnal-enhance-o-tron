@@ -1,6 +1,10 @@
 import pytest
 
-from debruijnal_enhance_o_tron.fixtures import ksize, using_ksize
+from debruijnal_enhance_o_tron.fixtures import (ksize,
+                                                using_ksize,
+                                                length,
+                                                using_length,
+                                                random_sequence)
 
 def test_ksize_default(ksize):
     assert ksize == 21
@@ -20,3 +24,25 @@ def test_ksize_override_seq(ksize):
         assert ksize == 25
     else:
         assert False
+
+
+def test_length_default(length):
+    assert length in [500, 1000]
+    if length != 500:
+        assert length == 1000
+    elif length != 1000:
+        assert length == 500
+    else:
+        assert False
+
+
+@using_length(777)
+def test_length_override(length):
+    assert length == 777
+
+
+@using_ksize(25)
+@using_length(100)
+def test_using_compose(length, ksize):
+    assert length == 100
+    assert ksize == 25
