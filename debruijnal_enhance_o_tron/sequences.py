@@ -64,10 +64,15 @@ def get_random_sequence(length, ksize, exclude=None, seen=None):
         for pos in range(0, len(exclude) - ksize):
             add_seen(exclude[pos:pos + ksize - 1])
 
+
     seq = [random.choice('ACGT') for _ in range(ksize - 1)]  # do first K-1 bases
     add_seen(''.join(seq))
 
+    i = 0
     while(len(seq) < length):
+        if i > length:
+            raise ValueError('K too small for request length.')
+        i += 1
         next_base = random.choice('ACGT')
         next_kmer = ''.join(seq[-ksize + 2:] + [next_base])
         assert len(next_kmer) == ksize - 1
@@ -76,6 +81,7 @@ def get_random_sequence(length, ksize, exclude=None, seen=None):
             add_seen(next_kmer)
         else:
             continue
+
     return ''.join(seq)
 
 

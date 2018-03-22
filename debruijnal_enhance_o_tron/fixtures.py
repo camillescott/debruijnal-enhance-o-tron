@@ -7,7 +7,8 @@ from debruijnal_enhance_o_tron.sequences import (mutate_base,
                                                  mutate_position,
                                                  get_random_sequence,
                                                  reads,
-                                                 kmers)
+                                                 kmers,
+                                                 revcomp)
 
 @pytest.fixture(params=[21], ids=['K=21'])
 def ksize(request):

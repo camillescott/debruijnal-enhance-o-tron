@@ -1,5 +1,11 @@
 import pytest
 
+from debruijnal_enhance_o_tron.sequences import (mutate_base,
+                                                 mutate_sequence,
+                                                 mutate_position,
+                                                 reads,
+                                                 kmers)
+
 from debruijnal_enhance_o_tron.fixtures import (ksize,
                                                 using_ksize,
                                                 length,
@@ -46,3 +52,16 @@ def test_length_override(length):
 def test_using_compose(length, ksize):
     assert length == 100
     assert ksize == 25
+
+
+@using_ksize(5)
+@using_length(20)
+def test_random_sequence(random_sequence, ksize, length):
+    seq1 = random_sequence()
+    seq2 = random_sequence(exclude=seq1)
+
+    assert len(seq1) == 20
+    assert len(seq2) == 20
+
+    for kmer in kmers(seq1, ksize):
+        assert kmer not in seq2
