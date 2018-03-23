@@ -1,14 +1,12 @@
-from functools import wraps
-
 import pytest
 
-from debruijnal_enhance_o_tron.sequences import (mutate_base,
-                                                 mutate_sequence,
-                                                 mutate_position,
-                                                 get_random_sequence,
-                                                 reads,
-                                                 kmers,
-                                                 revcomp)
+from debruijnal_enhance_o_tron.sequence import (mutate_base,
+                                                mutate_sequence,
+                                                mutate_position,
+                                                get_random_sequence,
+                                                reads,
+                                                kmers,
+                                                revcomp)
 
 @pytest.fixture(params=[21], ids=['K=21'])
 def ksize(request):
@@ -80,9 +78,4 @@ def random_sequence(request, ksize, length):
         return sequence
 
     return get
-
-
-
-
-
 
