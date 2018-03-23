@@ -43,6 +43,7 @@ def count_decision_nodes(sequence, graph, ksize):
 
     return dnodes
 
+
 @pytest.fixture
 def graph(ksize):
     '''Main point of client customization. Clients

@@ -6,8 +6,8 @@ from debruijnal_enhance_o_tron.sequences import (mutate_base,
                                                  reads,
                                                  kmers)
 
-from debruijnal_enhance_o_tron.fixtures import (using_ksize,
-                                                using_length)
+from debruijnal_enhance_o_tron.fixtures.sequence import (using_ksize,
+                                                         using_length)
 
 def test_ksize_default(ksize):
     assert ksize == 21
@@ -79,6 +79,7 @@ def test_graph_adapter_noimpl(graph, ksize):
 
     with pytest.raises(NotImplementedError):
         graph.degree(None)
+
 
 def test_linear_structure_noimpl(linear_structure, graph, ksize):
 
