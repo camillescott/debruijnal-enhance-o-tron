@@ -1,13 +1,12 @@
 import pytest
 
-from debruijnal_enhance_o_tron.fixtures import (ksize,
-                                                using_ksize)
-from debruijnal_enhance_o_tron.sequences import (mutate_base,
-                                                 mutate_sequence,
-                                                 mutate_position,
-                                                 get_random_sequence,
-                                                 reads,
-                                                 kmers)
+from debruijnal_enhance_o_tron.fixtures.sequence import using_ksize
+from debruijnal_enhance_o_tron.sequence import (mutate_base,
+                                                mutate_sequence,
+                                                mutate_position,
+                                                get_random_sequence,
+                                                reads,
+                                                kmers)
 
 
 @using_ksize([5, 7])

@@ -7,6 +7,7 @@ from setuptools import find_packages
 __path__ = os.path.dirname(__file__)
 __version__ = open(os.path.join(__path__, 'debruijnal_enhance_o_tron', 'VERSION')).read().strip()
 
+packages = find_packages(exclude=['docs'])
 
 setup(
     name = 'debruijnal-enhance-o-tron',
@@ -19,7 +20,7 @@ setup(
     description = 'pytest fixtures for testing de Bruin Graphs',
     license = 'BSD-3-Clause',
 
-    packages = find_packages(exclude=['docs', 'tests']),
+    packages = packages,
     zip_safe = False,
     platforms = 'any',
 

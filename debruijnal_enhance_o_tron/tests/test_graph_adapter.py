@@ -1,11 +1,12 @@
 import pytest
 
-from debruijnal_enhance_o_tron.fixtures import (using_ksize,
-                                                using_length,
-                                                GraphAdapter)
-from debruijnal_enhance_o_tron.sequences import (kmers)
+from debruijnal_enhance_o_tron.fixtures import subgraphs
+from debruijnal_enhance_o_tron.fixtures.sequence import (using_ksize,
+                                                         using_length)
+from debruijnal_enhance_o_tron.sequence import kmers
 
-class BaseGraph(GraphAdapter):
+
+class BaseGraph(subgraphs.GraphAdapter):
     '''Super basic Graph implementation following the
     provided `GraphAdapater` interface.
     '''
@@ -44,8 +45,8 @@ def graph(ksize):
 
 
 @using_length(100)
-def test_linear_structure_basegraph(linear_structure, graph, ksize, length):
-    _, sequence = linear_structure()
+def test_linear_path_basegraph(linear_path, graph, ksize, length):
+    _, sequence = linear_path()
     assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):
@@ -53,8 +54,8 @@ def test_linear_structure_basegraph(linear_structure, graph, ksize, length):
 
 
 @using_length(100)
-def test_right_tip_basegraph(right_tip_structure, graph, ksize, length):
-    _, sequence, tip, S = right_tip_structure()
+def test_right_tip_basegraph(right_tip, graph, ksize, length):
+    _, sequence, tip, S = right_tip()
     assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):

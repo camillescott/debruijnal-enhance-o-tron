@@ -1,6 +1,6 @@
 import pytest
 
-from debruijnal_enhance_o_tron.sequences import (mutate_base,
+from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                  mutate_sequence,
                                                  mutate_position,
                                                  reads,
@@ -81,12 +81,12 @@ def test_graph_adapter_noimpl(graph, ksize):
         graph.degree(None)
 
 
-def test_linear_structure_noimpl(linear_structure, graph, ksize):
+def test_linear_path_noimpl(linear_path, graph, ksize):
 
     with pytest.raises(NotImplementedError):
         # calling the inner function should trip this
         # on graph.add
-        _graph, sequence = linear_structure()
+        _graph, sequence = linear_path()
 
 
 

@@ -57,7 +57,7 @@ def graph(ksize):
 
 
 @pytest.fixture
-def linear_structure(request, graph, ksize, random_sequence):
+def linear_path(request, graph, ksize, random_sequence):
     '''Simple linear path graph structure.
 
     sequence
@@ -78,7 +78,7 @@ def linear_structure(request, graph, ksize, random_sequence):
 
 
 @pytest.fixture
-def right_tip_structure(request, graph, ksize, random_sequence):
+def right_tip(request, graph, ksize, random_sequence):
     '''
     Sets up a graph structure like so:
                                  ([S+1:S+K]+B tip)
