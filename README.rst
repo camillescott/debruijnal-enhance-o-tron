@@ -15,7 +15,9 @@ implementation. This is done by creating a `graph` fixture that overrides
 the enhance-o-tron's basic one. It should conform to (either implement
 the interface or subclass) the provided `GraphAdapter` class.
 
-Here's a minimal example::
+Here's a minimal example:
+
+.. code:: python
 
     import pytest
     from debruijnal_enhance_o_tron.fixtures import GraphAdapter
