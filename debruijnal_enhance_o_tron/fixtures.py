@@ -130,7 +130,7 @@ def graph(ksize):
 
 @pytest.fixture
 def linear_structure(request, graph, ksize, random_sequence):
-    '''Sets up a simple linear path graph structure.
+    '''Simple linear path graph structure.
 
     sequence
     [0]→o→o~~o→o→[-1]
@@ -145,5 +145,40 @@ def linear_structure(request, graph, ksize, random_sequence):
             request.applymarker(pytest.mark.xfail)
 
         return graph, sequence
+
+    return get
+
+
+@pytest.fixture
+def right_tip_structure(request, graph, ksize, random_sequence):
+    '''
+    Sets up a graph structure like so:
+                                 ([S+1:S+K]+B tip)
+    sequence                   ↗
+    [0]→o→o~~o→(L)→([S:S+K] HDN)→(R)→o→o→o~~o→[-1]
+
+    Where S is the start position of the high degreen node (HDN).
+    That is, it has a single branch at the Sth K-mer.
+
+    HDN: S : S+K
+    L:   S-1 : S-1+K
+    R:   S+1 : S+1+K
+    '''
+    def get():
+        sequence = random_sequence()
+        S = len(sequence) // 2
+        # right of the HDN
+        R = S + 1
+        # the branch kmer
+        tip = mutate_position(sequence[R:R+ksize], -1)
+
+        graph.add(sequence)
+        graph.add(tip)
+
+        # Check for false positive neighbors and mark as expected failure if found
+        if count_decision_nodes(sequence, graph, ksize) != {(1,2): 1}:
+            request.applymarker(pytest.mark.xfail)
+
+        return graph, sequence, tip, S
 
     return get

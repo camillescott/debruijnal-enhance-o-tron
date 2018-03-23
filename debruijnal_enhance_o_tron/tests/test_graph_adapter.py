@@ -50,3 +50,12 @@ def test_linear_structure_basegraph(linear_structure, graph, ksize, length):
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
+
+
+@using_length(100)
+def test_right_tip_basegraph(right_tip_structure, graph, ksize, length):
+    _, sequence, tip, S = right_tip_structure()
+    assert len(sequence) == length
+
+    for kmer in kmers(sequence, ksize):
+        assert graph.get(kmer)
