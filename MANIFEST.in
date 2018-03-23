@@ -1,0 +1,4 @@
+include README.rst
+include setup.cfg
+include LICENSE
+include debruijnal_enhance_o_tron/VERSION

@@ -9,25 +9,26 @@ __version__ = open(os.path.join(__path__, 'debruijnal_enhance_o_tron', 'VERSION'
 
 
 setup(
-    name='debruijnal-enhance-o-tron',
-    version=__version__,
+    name = 'debruijnal-enhance-o-tron',
+    version = __version__,
 
-    author='Camille Scott',
-    author_email='camille.scott.w@gmail.com',
+    author = 'Camille Scott',
+    author_email = 'camille.scott.w@gmail.com',
 
-    url='https://github.com/camillescott/debruijnal-enhance-o-tron',
-    description='pytest fixtures for testing de Bruin Graphs',
-    license='BSD-3-Clause',
+    url = 'https://github.com/camillescott/debruijnal-enhance-o-tron',
+    description = 'pytest fixtures for testing de Bruin Graphs',
+    license = 'BSD-3-Clause',
 
-    packages=find_packages(exclude=['docs', 'tests']),
-    zip_safe=False,
-    platforms='any',
+    packages = find_packages(exclude=['docs', 'tests']),
+    zip_safe = False,
+    platforms = 'any',
 
-    install_requires=['pytest'],
-    tests_require=['pytest', 'pytest-runner'],
+    install_requires = ['pytest'],
+    tests_require = ['pytest', 'pytest-runner'],
+    setup_requires = ['pytest', 'pytest-runner'],
 
-    keywords='pytest bioinformatics testing',
-    classifiers=[
+    keywords = 'pytest bioinformatics testing',
+    classifiers = [
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
