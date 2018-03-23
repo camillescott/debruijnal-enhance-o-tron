@@ -25,15 +25,14 @@ Here's a minimal example:
 
     class BaseGraph(GraphAdapter):
         '''Super basic Graph implementation following the
-        provided GraphAdapater interface.
-
-        All your graph adapter needs (for now) is `get()`, `add()`, 
-        and `degree()`.
+        provided `GraphAdapater` interface. The minimum requirements
+        are to expose `add`, `get`, `left_degree`, and `right_degree`.
         '''
 
         def __init__(self, ksize, *args, **kwargs):
             self.store = set()
             self.ksize = ksize
+            super().__init__(*args, **kwargs)
 
         def get(self, item):
             return item in self.store
@@ -47,14 +46,11 @@ Here's a minimal example:
                 for kmer in kmers(item, self.ksize):
                     self.store.add(kmer)
 
-        def degree(self, item):
-            d = 0
-            for b in 'ACGT':
-                if store.get(item[1:] + b):
-                    d += 1
-                if store.get(b + item[:-1]):
-                    d += 1
-            return d
+        def left_degree(self, item):
+            return sum((self.get(b + item[:-1]) for b in 'ACGT'))
+
+        def right_degree(self, item):
+            return sum((self.get(item[1:] + b) for b in 'ACGT'))
 
 
     @pytest.fixture

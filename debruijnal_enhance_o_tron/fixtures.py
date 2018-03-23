@@ -88,8 +88,28 @@ class GraphAdapter(object):
     def add(self, item):
         raise NotImplementedError()
 
-    def degree(self, item):
+    def left_degree(self, item):
         raise NotImplementedError()
+
+    def right_degree(self, item):
+        raise NotImplementedError()
+
+    def degree(self, item):
+        return self.right_degree(item) + self.left_degree(item)
+
+
+def count_decision_nodes(sequence, graph, ksize):
+    '''Get the degree distribution of nodes with degree more than 2.
+    '''
+
+    dnodes = {}
+    for kmer in kmers(sequence, ksize):
+        d = (graph.left_degree(kmer), graph.right_degree(kmer))
+        ld, rd = d
+        if ld > 1 or rd > 1:
+            dnodes[d] = dnodes.get(d, 0) + 1
+
+    return dnodes
 
 
 @pytest.fixture
@@ -116,8 +136,9 @@ def linear_structure(request, graph, ksize, random_sequence):
 
         # Check for false positive neighbors in our graph
         # Mark as an expected failure if any are found
-        #if hdn_counts(sequence, graph):
-        #    request.applymarker(pytest.mark.xfail)
+        if count_decision_nodes(sequence, graph, ksize):
+            request.applymarker(pytest.mark.xfail)
 
         return graph, sequence
+
     return get
