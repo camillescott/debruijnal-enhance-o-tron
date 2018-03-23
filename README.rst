@@ -65,7 +65,9 @@ Here's a minimal example:
         return BaseGraph(ksize)
 
 The `graph` fixture will be injected into the enhance-o-trons subgraph
-generator fixtures. Your tests can then be structured like...::
+generator fixtures. Your tests can then be structured like...:
+
+.. code:: python
 
     def test_something_with_unitig(linear_structure, graph, ksize, length):
         _, sequence = liner_structure()
@@ -75,6 +77,8 @@ generator fixtures. Your tests can then be structured like...::
 
 
 Both these snippets assume you've injected the fixtures into your
-test session via your `conftest.py`, in which you could just stick::
+test session via your `conftest.py`, in which you could just stick:
+
+.. code:: python
 
     from debruijnal_enhance_o_tron.fixtures import *
