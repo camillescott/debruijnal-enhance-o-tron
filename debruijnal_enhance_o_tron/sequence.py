@@ -39,6 +39,13 @@ def mutate_position(sequence, pos):
     return ''.join(sequence)
 
 
+def get_random_base(bases='ACGT'):
+    return random.choice(bases)
+
+
+def _get_random_sequence(length):
+    return ''.join((get_random_base() for _ in range(length)))
+
 def get_random_sequence(length, ksize, exclude=None, seen=None):
     '''Generate a random (non-looping) nucleotide sequence.
 
@@ -58,24 +65,29 @@ def get_random_sequence(length, ksize, exclude=None, seen=None):
 
     def add_seen(kmer):
         seen.add(kmer)
-        seen.add(revcomp(kmer))
 
     if exclude is not None:
-        for pos in range(0, len(exclude) - ksize):
-            add_seen(exclude[pos:pos + ksize - 1])
+        for kmer in kmers(exclude, ksize - 1):
+            add_seen(kmer)
+    
+    # start off the sequence, make sure it doesn't overlap
+    # with our exlcusions
+    seq = _get_random_sequence(ksize - 1)
+    while seq in seen:
+        seq = _get_random_sequence(ksize - 1)
+    add_seen(seq)
+    seq = list(seq)
 
-
-    seq = [random.choice('ACGT') for _ in range(ksize - 1)]  # do first K-1 bases
-    add_seen(''.join(seq))
-
+    # now extend the sequence one base at a time, checking k-1-mer
+    # suffix against seen set
     i = 0
     while(len(seq) < length):
-        if i > length * 2:
+        if i > length * 4:
             raise ValueError('K too small for request length.')
         i += 1
-        next_base = random.choice('ACGT')
+        next_base = get_random_base()
         next_kmer = ''.join(seq[-ksize + 2:] + [next_base])
-        assert len(next_kmer) == ksize - 1
+
         if (next_kmer) not in seen:
             seq.append(next_base)
             add_seen(next_kmer)
