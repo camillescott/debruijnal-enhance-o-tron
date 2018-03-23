@@ -9,12 +9,15 @@ def comp(base):
 
 
 def revcomp(sequence):
-    sequence.upper()
+    '''Perform reverse complement.
+    '''
     bases = reversed([complements.get(base, base) for base in sequence])
     return ''.join(bases)
 
 
 def mutate_base(base):
+    '''Non complementary mutation of the given base.
+    '''
     if base in 'AT':
         return random.choice('GC')
     elif base in 'GC':
@@ -24,6 +27,9 @@ def mutate_base(base):
 
 
 def mutate_sequence(sequence, N=1):
+    '''Return a copy of the sequence with N mutations at random
+    positions.
+    '''
     sequence = list(sequence)
     positions = random.sample(range(len(sequence)), N)
 
@@ -34,16 +40,24 @@ def mutate_sequence(sequence, N=1):
 
 
 def mutate_position(sequence, pos):
+    '''Return a copy of the sequence with a point mutation
+    at the given position.
+    '''
     sequence = list(sequence)
     sequence[pos] = mutate_base(sequence[pos])
     return ''.join(sequence)
 
 
 def get_random_base(bases='ACGT'):
+    '''Return a random nucleotide from the standard alphabet.
+    '''
     return random.choice(bases)
 
 
 def _get_random_sequence(length):
+    '''Generate a random sequence without care for overlaps.
+    '''
+
     return ''.join((get_random_base() for _ in range(length)))
 
 def get_random_sequence(length, ksize, exclude=None, seen=None):
