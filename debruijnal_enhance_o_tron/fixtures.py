@@ -75,3 +75,49 @@ def random_sequence(request, ksize, length):
         return sequence
 
     return get
+
+
+class GraphAdapter(object):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def get(self, item):
+        raise NotImplementedError()
+
+    def add(self, item):
+        raise NotImplementedError()
+
+    def degree(self, item):
+        raise NotImplementedError()
+
+
+@pytest.fixture
+def graph(ksize):
+    '''Main point of client customization. Clients
+    must override this fixture locally to expose their 
+    dBG implementation. The implementation should, at minimum,
+    support the methods from in the `GraphAdapter` interface.
+    '''
+
+    return GraphAdapter()
+
+
+@pytest.fixture
+def linear_structure(request, graph, ksize, random_sequence):
+    '''Sets up a simple linear path graph structure.
+
+    sequence
+    [0]→o→o~~o→o→[-1]
+    '''
+    def get():
+        sequence = random_sequence()
+        graph.add(sequence)
+
+        # Check for false positive neighbors in our graph
+        # Mark as an expected failure if any are found
+        #if hdn_counts(sequence, graph):
+        #    request.applymarker(pytest.mark.xfail)
+
+        return graph, sequence
+    return get

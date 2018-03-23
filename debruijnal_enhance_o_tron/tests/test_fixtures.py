@@ -10,7 +10,10 @@ from debruijnal_enhance_o_tron.fixtures import (ksize,
                                                 using_ksize,
                                                 length,
                                                 using_length,
-                                                random_sequence)
+                                                random_sequence,
+                                                GraphAdapter,
+                                                graph,
+                                                linear_structure)
 
 def test_ksize_default(ksize):
     assert ksize == 21
@@ -65,3 +68,19 @@ def test_random_sequence(random_sequence, ksize, length):
 
     for kmer in kmers(seq1, ksize):
         assert kmer not in seq2
+
+
+def test_graph_adapter_noimpl(graph, ksize):
+    with pytest.raises(NotImplementedError):
+        graph.get(None)
+
+
+def test_linear_structure_noimpl(linear_structure, graph, ksize):
+
+    with pytest.raises(NotImplementedError):
+        # calling the inner function should trip this
+        # on graph.add
+        _graph, sequence = linear_structure()
+
+
+
