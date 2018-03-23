@@ -24,7 +24,7 @@ setup(
     platforms='any',
 
     install_requires=['pytest'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'pytest-runner'],
 
     keywords='pytest bioinformatics testing',
     classifiers=[
