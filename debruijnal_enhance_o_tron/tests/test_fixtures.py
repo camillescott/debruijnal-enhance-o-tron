@@ -6,14 +6,8 @@ from debruijnal_enhance_o_tron.sequences import (mutate_base,
                                                  reads,
                                                  kmers)
 
-from debruijnal_enhance_o_tron.fixtures import (ksize,
-                                                using_ksize,
-                                                length,
-                                                using_length,
-                                                random_sequence,
-                                                GraphAdapter,
-                                                graph,
-                                                linear_structure)
+from debruijnal_enhance_o_tron.fixtures import (using_ksize,
+                                                using_length)
 
 def test_ksize_default(ksize):
     assert ksize == 21

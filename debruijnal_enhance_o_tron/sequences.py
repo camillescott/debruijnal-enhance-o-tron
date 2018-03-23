@@ -70,7 +70,7 @@ def get_random_sequence(length, ksize, exclude=None, seen=None):
 
     i = 0
     while(len(seq) < length):
-        if i > length:
+        if i > length * 2:
             raise ValueError('K too small for request length.')
         i += 1
         next_base = random.choice('ACGT')
