@@ -64,10 +64,15 @@ def random_sequence(request, ksize, length):
     global_seen = set()
 
     def get(exclude=None):
-        sequence = get_random_sequence(length, 
-                                       ksize,
-                                       exclude=exclude,
-                                       seen=global_seen)
+
+        try:
+            sequence = get_random_sequence(length, 
+                                           ksize,
+                                           exclude=exclude,
+                                           seen=global_seen)
+        except ValueError:
+            request.applymarker(pytest.mark.xfail)
+
         for i in range(len(sequence)-ksize):
             global_seen.add(sequence[i:i+ksize-1])
             global_seen.add(revcomp(sequence[i:i+ksize-1]))
