@@ -68,6 +68,17 @@ def test_graph_adapter_noimpl(graph, ksize):
     with pytest.raises(NotImplementedError):
         graph.get(None)
 
+    with pytest.raises(NotImplementedError):
+        graph.add(None)
+
+    with pytest.raises(NotImplementedError):
+        graph.left_degree(None)
+
+    with pytest.raises(NotImplementedError):
+        graph.right_degree(None)
+
+    with pytest.raises(NotImplementedError):
+        graph.degree(None)
 
 def test_linear_structure_noimpl(linear_structure, graph, ksize):
 
