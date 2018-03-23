@@ -73,7 +73,6 @@ def random_sequence(request, ksize, length):
 
         for i in range(len(sequence)-ksize):
             global_seen.add(sequence[i:i+ksize-1])
-            global_seen.add(revcomp(sequence[i:i+ksize-1]))
 
         return sequence
 

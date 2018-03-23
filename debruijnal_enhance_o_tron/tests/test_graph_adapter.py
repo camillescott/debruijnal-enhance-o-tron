@@ -46,7 +46,7 @@ def graph(ksize):
 
 @using_length(100)
 def test_linear_path_basegraph(linear_path, graph, ksize, length):
-    _, sequence = linear_path()
+    _, (sequence,) = linear_path()
     assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):
@@ -55,8 +55,12 @@ def test_linear_path_basegraph(linear_path, graph, ksize, length):
 
 @using_length(100)
 def test_right_tip_basegraph(right_tip, graph, ksize, length):
-    _, sequence, tip, S = right_tip()
+    _, (sequence, tip), S = right_tip()
     assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
+
+
+def test_right_fork_basegraph(right_fork, ksize, length):
+    graph, (sequence, branch), S = right_fork()

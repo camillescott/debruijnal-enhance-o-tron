@@ -72,7 +72,7 @@ def linear_path(request, graph, ksize, random_sequence):
         if count_decision_nodes(sequence, graph, ksize):
             request.applymarker(pytest.mark.xfail)
 
-        return graph, sequence
+        return graph, (sequence,)
 
     return get
 
@@ -107,6 +107,46 @@ def right_tip(request, graph, ksize, random_sequence):
         if count_decision_nodes(sequence, graph, ksize) != {(1,2): 1}:
             request.applymarker(pytest.mark.xfail)
 
-        return graph, sequence, tip, S
+        return graph, (sequence, tip), S
 
     return get
+
+
+@pytest.fixture
+def right_fork(request, ksize, right_tip, random_sequence):
+    '''
+    Sets up a graph structure like so:
+                                               branch
+                                 ([S+1:S+K]+B)→o~~o→o
+    core_sequence               ↗
+    [0]→o→o~~o→(L)→([S:S+K] HDN)→(R)→o→o→o~~o→[-1]
+
+    Where S is the start position of the high degreen node (HDN)
+    and B is the mutated base starting the branch.
+
+    This is a tip with a longer fork length.
+    '''
+
+    def get():
+        graph, (core_sequence, tip), S = right_tip()
+        print('\nCore Len:', len(core_sequence))
+        branch_sequence = random_sequence()
+        print('Branch len:', len(branch_sequence))
+
+        branch_sequence = tip + random_sequence()
+
+        graph.add(core_sequence)
+        graph.add(branch_sequence)
+
+        # Check for false positive neighbors
+        core_decision_nodes = count_decision_nodes(core_sequence, graph, ksize)
+
+        # the core sequence should conain a decision node 
+        # with ldegree of 1 and rdegre of 2
+        if core_decision_nodes != {(1,2): 1}:
+            request.applymarker(pytest.mark.xfail)
+
+        return graph, (core_sequence, branch_sequence), S
+
+    return get
+
