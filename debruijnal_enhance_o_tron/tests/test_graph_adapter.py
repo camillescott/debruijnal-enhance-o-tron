@@ -114,3 +114,21 @@ def test_right_triple_fork_consume(right_triple_fork, graph,
                       kmers(top, ksize),
                       kmers(bottom, ksize)):
         assert graph.get(kmer)
+
+
+def test_snp_bubble_noconsume(snp_bubble, graph, ksize, length):
+    (wildtype, snp), L, R = snp_bubble()
+
+    for kmer in chain(kmers(wildtype, ksize),
+                      kmers(snp, ksize)):
+        assert not graph.get(kmer)
+
+
+def test_snp_bubble_consume(snp_bubble, graph, consumer, ksize, length):
+    (wildtype, snp), L, R = snp_bubble()
+    assert subgraphs.count_decision_nodes(wildtype, graph, ksize) \
+            == {(1,2): 1, (2,1):1}
+
+    for kmer in chain(kmers(wildtype, ksize),
+                      kmers(snp, ksize)):
+        assert graph.get(kmer)

@@ -65,11 +65,22 @@ def consumer(request, graph):
 
 
 def do_consume(request, *args):
+    '''Check if the consumer fixture is active in this request,
+    and if so, use it to consume the sequences into the graph.
+
+    Returns False if consumer is not active OR the check_fp
+    marker is not active on the test.
+    '''
+
     if 'consumer' in request.fixturenames:
         graph, consume = request.getfixturevalue('consumer')
         consume(args)
-        return graph
-    return False
+        if request.node.get_marker('check_fp') is not None:
+            return graph
+        else:
+            return False
+    else:
+        return False
 
 
 @pytest.fixture
