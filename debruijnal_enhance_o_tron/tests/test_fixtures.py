@@ -136,3 +136,9 @@ def test_tandem_repeat_lt_ksize(tandem_repeats_lt_ksize, ksize):
     (repeat, tandem_repeats), n_repeats = tandem_repeats_lt_ksize()
 
     assert tandem_repeats.count(repeat) == n_repeats
+
+
+def test_tandem_repeat_gt_ksize(tandem_repeats_gt_ksize, ksize):
+    (repeat, tandem_repeats), n_repeats = tandem_repeats_gt_ksize()
+
+    assert tandem_repeats.count(repeat) == n_repeats

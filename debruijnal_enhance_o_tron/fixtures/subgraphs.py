@@ -291,3 +291,19 @@ def tandem_repeats_lt_ksize(request, ksize):
         return (repeat, tandem_repeats), request.param
 
     return get
+
+
+@pytest.fixture(params=[2,6,10], ids=lambda r: 'repeats={0}'.format(r))
+def tandem_repeats_gt_ksize(request, ksize):
+
+    def get():
+        repeat = _get_random_sequence(ksize * 2)
+        tandem_repeats = repeat * request.param
+
+        graph = do_consume(request, tandem_repeats)
+        if graph and count_decision_nodes(tandem_repeats, graph, ksize):
+            request.applymarker(pytest.mark.xfail)
+
+        return (repeat, tandem_repeats), request.param
+
+    return get
