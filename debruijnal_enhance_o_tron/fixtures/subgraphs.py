@@ -275,7 +275,7 @@ def snp_bubble(request, ksize, linear_path):
     return get
 
 
-@pytest.fixture(params=[2,6,10])
+@pytest.fixture(params=[2,6,10], ids=lambda r: 'repeats={0}'.format(r))
 def tandem_repeats_lt_ksize(request, ksize):
     if ksize < 4:
         raise ValueError('Must use ksize >= 4')

@@ -132,3 +132,23 @@ def test_snp_bubble_consume(snp_bubble, graph, consumer, ksize, length):
     for kmer in chain(kmers(wildtype, ksize),
                       kmers(snp, ksize)):
         assert graph.get(kmer)
+
+
+def test_tandem_repeat_lt_ksize_noconsume(tandem_repeats_lt_ksize,
+                                          ksize,
+                                          graph):
+    (repeat, tandem_repeats), n_repeats = tandem_repeats_lt_ksize()
+
+    for kmer in kmers(tandem_repeats, ksize):
+        assert not graph.get(kmer)
+
+
+def test_tandem_repeat_lt_ksize_consume(tandem_repeats_lt_ksize,
+                                          ksize,
+                                          graph,
+                                          consumer):
+    (repeat, tandem_repeats), n_repeats = tandem_repeats_lt_ksize()
+    assert not subgraphs.count_decision_nodes(tandem_repeats, graph, ksize)
+
+    for kmer in kmers(tandem_repeats, ksize):
+        assert graph.get(kmer)
