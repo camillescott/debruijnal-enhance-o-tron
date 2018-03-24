@@ -4,6 +4,7 @@ import pytest
 from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 mutate_sequence,
                                                 mutate_position,
+                                                _get_random_sequence,
                                                 get_random_sequence,
                                                 reads,
                                                 kmers,
@@ -273,3 +274,20 @@ def snp_bubble(request, ksize, linear_path):
 
     return get
 
+
+@pytest.fixture(params=[2,6,10])
+def tandem_repeats_lt_ksize(request, ksize):
+    if ksize < 4:
+        raise ValueError('Must use ksize >= 4')
+
+    def get():
+        repeat = _get_random_sequence(ksize - 2)
+        tandem_repeats = repeat * request.param
+
+        graph = do_consume(request, tandem_repeats)
+        if graph and count_decision_nodes(tandem_repeats, graph, ksize):
+            request.applymarker(pytest.mark.xfail)
+
+        return (repeat, tandem_repeats), request.param
+
+    return get

@@ -18,6 +18,7 @@ def test_ksize_default(ksize):
     else:
         assert False
 
+
 @using_ksize(31)
 def test_ksize_override(ksize):
     assert ksize == 31
@@ -129,3 +130,9 @@ def test_snp_bubble(snp_bubble, ksize, length):
 
     for kmer in kmers(wildtype[L+1:R], ksize):
         assert kmer not in snp
+
+
+def test_tandem_repeat_lt_ksize(tandem_repeats_lt_ksize, ksize):
+    (repeat, tandem_repeats), n_repeats = tandem_repeats_lt_ksize()
+
+    assert tandem_repeats.count(repeat) == n_repeats
