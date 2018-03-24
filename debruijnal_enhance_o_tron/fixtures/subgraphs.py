@@ -55,9 +55,24 @@ def graph(ksize):
     return GraphAdapter()
 
 
+@pytest.fixture
+def consumer(request, graph):
+    def consume(sequences):
+        for sequence in sequences:
+            graph.add(sequence)
+    return graph, consume
+
+
+def do_consume(request, *args):
+    if 'consumer' in request.fixturenames:
+        graph, consume = request.getfixturevalue('consumer')
+        consume(args)
+        return graph
+    return False
+
 
 @pytest.fixture
-def linear_path(request, graph, ksize, random_sequence):
+def linear_path(request, ksize, random_sequence):
     '''Simple linear path graph structure.
 
     sequence
@@ -65,20 +80,20 @@ def linear_path(request, graph, ksize, random_sequence):
     '''
     def get():
         sequence = random_sequence()
-        graph.add(sequence)
 
         # Check for false positive neighbors in our graph
         # Mark as an expected failure if any are found
-        if count_decision_nodes(sequence, graph, ksize):
+        graph = do_consume(request, sequence)
+        if graph and count_decision_nodes(sequence, graph, ksize):
             request.applymarker(pytest.mark.xfail)
 
-        return graph, (sequence,)
+        return sequence
 
     return get
 
 
 @pytest.fixture
-def right_tip(request, graph, ksize, random_sequence):
+def right_tip(request, ksize, random_sequence):
     '''
     Sets up a graph structure like so:
                                  ([S+1:S+K]+B tip)
@@ -100,14 +115,14 @@ def right_tip(request, graph, ksize, random_sequence):
         # the branch kmer
         tip = mutate_position(sequence[R:R+ksize], -1)
 
-        graph.add(sequence)
-        graph.add(tip)
-
         # Check for false positive neighbors and mark as expected failure if found
-        if count_decision_nodes(sequence, graph, ksize) != {(1,2): 1}:
+        graph = do_consume(request, sequence, tip)
+        if graph and count_decision_nodes(sequence,
+                                          graph,
+                                          ksize) != {(1,2): 1}:
             request.applymarker(pytest.mark.xfail)
 
-        return graph, (sequence, tip), S
+        return (sequence, tip), S
 
     return get
 
@@ -128,25 +143,25 @@ def right_fork(request, ksize, right_tip, random_sequence):
     '''
 
     def get():
-        graph, (core_sequence, tip), S = right_tip()
+        (core_sequence, tip), S = right_tip()
         print('\nCore Len:', len(core_sequence))
         branch_sequence = random_sequence()
         print('Branch len:', len(branch_sequence))
 
         branch_sequence = tip + random_sequence()
 
-        graph.add(core_sequence)
-        graph.add(branch_sequence)
+        graph = do_consume(request, core_sequence, branch_sequence)
+        if graph:
+            # Check for false positive neighbors
+            core_decision_nodes = count_decision_nodes(core_sequence, graph, ksize)
 
-        # Check for false positive neighbors
-        core_decision_nodes = count_decision_nodes(core_sequence, graph, ksize)
+            # the core sequence should conain a decision node 
+            # with ldegree of 1 and rdegre of 2
+            if core_decision_nodes != {(1,2): 1}:
+                request.applymarker(pytest.mark.xfail)
 
-        # the core sequence should conain a decision node 
-        # with ldegree of 1 and rdegre of 2
-        if core_decision_nodes != {(1,2): 1}:
-            request.applymarker(pytest.mark.xfail)
-
-        return graph, (core_sequence, branch_sequence), S
+        return (core_sequence, branch_sequence), S
 
     return get
+
 

@@ -81,12 +81,28 @@ def test_graph_adapter_noimpl(graph, ksize):
         graph.degree(None)
 
 
-def test_linear_path_noimpl(linear_path, graph, ksize):
-
+def test_consumer_noimpl(consumer):
+    graph, consume = consumer
     with pytest.raises(NotImplementedError):
-        # calling the inner function should trip this
-        # on graph.add
-        _graph, sequence = linear_path()
+        graph.get(None)
+    with pytest.raises(NotImplementedError):
+        consume(('AAAAAAA'))
 
 
+def test_linear_path(linear_path, ksize, length):
+    sequence = linear_path()
+    assert len(sequence) == length
 
+
+def test_right_tip(right_tip, ksize, length):
+    (core, tip), S = right_tip()
+    assert len(core) == length
+    assert len(tip) == ksize
+
+    assert tip[:-1] == core[S+1:S+ksize]
+
+
+def test_right_fork(right_fork, ksize, length):
+    (core, branch), S = right_fork()
+    
+    assert branch[:ksize-1] == core[S+1:S+ksize]

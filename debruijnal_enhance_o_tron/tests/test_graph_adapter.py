@@ -21,7 +21,7 @@ class BaseGraph(subgraphs.GraphAdapter):
 
     def add(self, item):
         if len(item) < self.ksize:
-            raise ValueError()
+            raise ValueError(item)
         elif len(item) == self.ksize:
             self.store.add(item)
         else:
@@ -44,23 +44,49 @@ def graph(ksize):
     return BaseGraph(ksize)
 
 
-@using_length(100)
-def test_linear_path_basegraph(linear_path, graph, ksize, length):
-    _, (sequence,) = linear_path()
+def test_linear_path_noconsume(linear_path, graph, ksize, length):
+    sequence = linear_path()
+    assert len(sequence) == length
+
+    for kmer in kmers(sequence, ksize):
+        assert not graph.get(kmer)
+
+
+def test_linear_path_consume(linear_path, graph, consumer, ksize, length):
+    sequence = linear_path()
     assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
 
 
-@using_length(100)
-def test_right_tip_basegraph(right_tip, graph, ksize, length):
-    _, (sequence, tip), S = right_tip()
+def test_right_tip_noconsume(right_tip, graph, ksize, length):
+    (sequence, tip), S = right_tip()
+    assert len(sequence) == length
+
+    for kmer in kmers(sequence, ksize):
+        assert not graph.get(kmer)
+
+
+def test_right_tip_consume(right_tip, graph, consumer, ksize, length):
+    (sequence, tip), S = right_tip()
     assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
 
 
-def test_right_fork_basegraph(right_fork, ksize, length):
-    graph, (sequence, branch), S = right_fork()
+def test_right_fork_noconsume(right_fork, graph, ksize, length):
+    (sequence, branch), S = right_fork()
+    assert len(sequence) == length
+
+    for kmer in kmers(sequence, ksize):
+        assert not graph.get(kmer)
+
+
+def test_right_fork_consume(right_fork, graph, consumer, ksize, length):
+    (sequence, branch), S = right_fork()
+    assert len(sequence) == length
+
+    for kmer in kmers(sequence, ksize):
+        assert graph.get(kmer)
