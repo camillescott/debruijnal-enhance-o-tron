@@ -307,3 +307,19 @@ def tandem_repeats_gt_ksize(request, ksize):
         return (repeat, tandem_repeats), request.param
 
     return get
+
+
+@pytest.fixture
+def circular(request, linear_path):
+
+    def get():
+        sequence = linear_path()
+        sequence += sequence
+
+        graph = do_consume(request, sequence)
+        if graph and count_decision_nodes(sequence, graph, ksize):
+            request.applymarker(pytest.mark.xfail)
+
+        return sequence
+
+    return get

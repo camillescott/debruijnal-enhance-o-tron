@@ -172,3 +172,19 @@ def test_tandem_repeat_gt_ksize_consume(tandem_repeats_gt_ksize,
 
     for kmer in kmers(tandem_repeats, ksize):
         assert graph.get(kmer)
+
+
+def test_circular_noconsume(circular, graph, length, ksize):
+    sequence = circular()
+    
+    for kmer in kmers(sequence, ksize):
+        assert not graph.get(kmer)
+
+
+def test_circular_consume(circular, graph, consumer, length, ksize):
+    sequence = circular()
+    assert not subgraphs.count_decision_nodes(sequence, graph, ksize)
+    assert graph.left_degree(sequence[:ksize]) == 1
+
+    for kmer in kmers(sequence, ksize):
+        assert graph.get(kmer)
