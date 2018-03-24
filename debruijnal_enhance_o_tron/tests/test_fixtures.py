@@ -10,8 +10,13 @@ from debruijnal_enhance_o_tron.fixtures.sequence import (using_ksize,
                                                          using_length)
 
 def test_ksize_default(ksize):
-    assert ksize == 21
-
+    assert ksize in [21,51]
+    if ksize != 21:
+        assert ksize == 51
+    elif ksize != 51:
+        assert ksize == 21
+    else:
+        assert False
 
 @using_ksize(31)
 def test_ksize_override(ksize):
