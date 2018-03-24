@@ -1,3 +1,5 @@
+from itertools import chain
+
 import pytest
 
 from debruijnal_enhance_o_tron.fixtures import subgraphs
@@ -46,7 +48,6 @@ def graph(ksize):
 
 def test_linear_path_noconsume(linear_path, graph, ksize, length):
     sequence = linear_path()
-    assert len(sequence) == length
 
     for kmer in kmers(sequence, ksize):
         assert not graph.get(kmer)
@@ -54,7 +55,7 @@ def test_linear_path_noconsume(linear_path, graph, ksize, length):
 
 def test_linear_path_consume(linear_path, graph, consumer, ksize, length):
     sequence = linear_path()
-    assert len(sequence) == length
+    assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {}
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
@@ -62,17 +63,18 @@ def test_linear_path_consume(linear_path, graph, consumer, ksize, length):
 
 def test_right_tip_noconsume(right_tip, graph, ksize, length):
     (sequence, tip), S = right_tip()
-    assert len(sequence) == length
 
-    for kmer in kmers(sequence, ksize):
+    for kmer in chain(kmers(sequence, ksize),
+                      kmers(tip, ksize)):
         assert not graph.get(kmer)
 
 
 def test_right_tip_consume(right_tip, graph, consumer, ksize, length):
     (sequence, tip), S = right_tip()
-    assert len(sequence) == length
+    assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(1,2): 1}
 
-    for kmer in kmers(sequence, ksize):
+    for kmer in chain(kmers(sequence, ksize),
+                      kmers(tip, ksize)):
         assert graph.get(kmer)
 
 
@@ -80,13 +82,35 @@ def test_right_fork_noconsume(right_fork, graph, ksize, length):
     (sequence, branch), S = right_fork()
     assert len(sequence) == length
 
-    for kmer in kmers(sequence, ksize):
+    for kmer in chain(kmers(sequence, ksize),
+                      kmers(branch, ksize)):
         assert not graph.get(kmer)
 
 
 def test_right_fork_consume(right_fork, graph, consumer, ksize, length):
     (sequence, branch), S = right_fork()
-    assert len(sequence) == length
+    assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(1,2): 1}
 
-    for kmer in kmers(sequence, ksize):
+    for kmer in chain(kmers(sequence, ksize),
+                      kmers(branch, ksize)):
+        assert graph.get(kmer)
+
+
+def test_right_triple_fork_noconsume(right_triple_fork, graph, ksize, length):
+    (core, top, bottom), S = right_triple_fork()
+
+    for kmer in chain(kmers(core, ksize),
+                      kmers(top, ksize),
+                      kmers(bottom, ksize)):
+        assert not graph.get(kmer)
+
+
+def test_right_triple_fork_consume(right_triple_fork, graph, 
+                                     consumer, ksize, length):
+    (core, top, bottom), S = right_triple_fork()
+    assert subgraphs.count_decision_nodes(core, graph, ksize) == {(1,3): 1}
+
+    for kmer in chain(kmers(core, ksize),
+                      kmers(top, ksize),
+                      kmers(bottom, ksize)):
         assert graph.get(kmer)

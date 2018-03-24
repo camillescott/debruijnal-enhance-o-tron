@@ -1,3 +1,4 @@
+import random
 import pytest
 
 from debruijnal_enhance_o_tron.sequence import (mutate_base,
@@ -103,9 +104,11 @@ def right_tip(request, ksize, random_sequence):
     Where S is the start position of the high degreen node (HDN).
     That is, it has a single branch at the Sth K-mer.
 
-    HDN: S : S+K
-    L:   S-1 : S-1+K
-    R:   S+1 : S+1+K
+    HDN: S:S+K
+    L:   S-1:S-1+K
+    R:   S+1:S+1+K
+
+    The mutated base itself is at S+K
     '''
     def get():
         sequence = random_sequence()
@@ -165,3 +168,45 @@ def right_fork(request, ksize, right_tip, random_sequence):
     return get
 
 
+@pytest.fixture
+def right_triple_fork(request, ksize, right_fork, random_sequence):
+    '''
+    Sets up a graph structure like so:
+
+                                       top_branch
+                                ([:S+1]+B)→o~~o→o
+    core_sequence              ↗
+    [0]→o→o~~o→(L)→([S:S+K] HDN)→(R)→o→o→o~~o→[-1]
+                               ↘
+                                ([:S+1]+B)→o~~o→o
+                                     bottom_branch
+
+    Where S is the start position of the high degreen node (HDN).
+    '''
+    
+    def get():
+        (core_sequence, top_branch), S = right_fork()
+        bottom_branch = random_sequence()
+        print(len(core_sequence), len(top_branch), len(bottom_branch))
+
+        # the branch sequence, mutated at position S+1
+        # choose a base not already represented at that position
+        bases = {'A', 'C', 'G', 'T'}
+        used = {core_sequence[S+ksize], top_branch[ksize-1]}
+        mutated = random.choice(list(bases - used))
+
+        bottom_branch = top_branch[:ksize - 1] + mutated + bottom_branch
+
+        
+        graph = do_consume(request, core_sequence, bottom_branch, top_branch)
+        if graph:
+            core_decision_nodes = count_decision_nodes(core_sequence,
+                                                       graph,
+                                                       ksize)
+
+            if not (core_decision_nodes == {(1,3): 1}):
+                request.applymarker(pytest.mark.xfail)
+
+        return (core_sequence, top_branch, bottom_branch), S 
+
+    return get

@@ -106,3 +106,10 @@ def test_right_fork(right_fork, ksize, length):
     (core, branch), S = right_fork()
     
     assert branch[:ksize-1] == core[S+1:S+ksize]
+
+
+def test_right_triple_fork(right_triple_fork, ksize, length):
+    (core, top, bottom), S = right_triple_fork()
+
+    assert top[:ksize-1] == core[S+1:S+ksize]
+    assert bottom[:ksize-1] == core[S+1:S+ksize]
