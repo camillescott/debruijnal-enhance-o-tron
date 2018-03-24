@@ -113,3 +113,14 @@ def test_right_triple_fork(right_triple_fork, ksize, length):
 
     assert top[:ksize-1] == core[S+1:S+ksize]
     assert bottom[:ksize-1] == core[S+1:S+ksize]
+
+
+def test_snp_bubble(snp_bubble, ksize, length):
+    (wildtype, snp), L, R = snp_bubble()
+    
+    assert wildtype[:L+ksize] == snp[:L+ksize]
+    assert wildtype[R:] == snp[R:]
+    assert wildtype[R-1] != snp[R-1]
+
+    for kmer in kmers(wildtype[L+1:R], ksize):
+        assert kmer not in snp

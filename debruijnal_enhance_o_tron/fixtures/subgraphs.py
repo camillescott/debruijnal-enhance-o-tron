@@ -210,3 +210,55 @@ def right_triple_fork(request, ksize, right_fork, random_sequence):
         return (core_sequence, top_branch, bottom_branch), S 
 
     return get
+
+
+
+@pytest.fixture
+def snp_bubble(request, ksize, linear_path):
+    '''
+    Sets up a graph structure resulting from a SNP (Single Nucleotide
+    Polymorphism).
+
+                (HDN_L[1:]+SNP)→o~~o→(SNP+)
+              ↗                           ↘
+    o~~(HDN_L)                             (HDN_R)~~o
+              ↘                           ↗
+                (HDN_L[1:]+W)→o~~o~~o→(W+)
+
+
+    HDN_L: S:S+K
+    HDN_R: S+K+1:S+2K+1
+
+    Where S is the start position of HDN directly left of the SNP (HDN_L),
+    SNP is the mutated base, and W is the wildtype (original) base.
+    Of course, W and SNP could be interchanged here, we don't actually
+    know which is which ;)
+
+    Note our parametrization: we need a bit more room from the ends,
+    so we bring the rightmost SNP a tad left.
+    '''
+
+    def get():
+        wildtype_sequence = linear_path()
+        HDN_L = len(wildtype_sequence) // 2
+        HDN_R = HDN_L + ksize + 1
+
+        snp_sequence = mutate_position(wildtype_sequence, HDN_L + ksize)
+
+        graph = do_consume(request, wildtype_sequence, snp_sequence)
+        if graph:
+            wildtype_decision_nodes = count_decision_nodes(wildtype_sequence,
+                                                           graph,
+                                                           ksize)
+            snp_decision_nodes = count_decision_nodes(snp_sequence,
+                                                      graph,
+                                                      ksize)
+            if not (snp_decision_nodes == \
+                    wildtype_decision_nodes == \
+                    {(1,2): 1, (2,1):1}):
+                request.applymarker(pytest.mark.xfail)
+
+        return (wildtype_sequence, snp_sequence), HDN_L, HDN_R
+
+    return get
+
