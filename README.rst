@@ -7,7 +7,7 @@ the Debruijnal Enhance-O-Tron!
 pytest fixtures for testing de Bruin Graphs. WIP.
 
 
-Basic Usage
+Basic Setup
 -----------
 
 The only required setup is to set up an adapter for your de Bruijn Graph
@@ -65,9 +65,9 @@ generator fixtures. Your tests can then be structured like...:
 
 .. code:: python
 
-    def test_something_with_unitig(linear_structure, graph, ksize, length):
-        _, sequence = liner_structure()
-        shiny_assembler = Assembler(graph)
+    def test_something_with_unitig(linear_path, graph, ksize, length):
+        sequence = linear_path()
+        shiny_assembler = ShinyAssembler(graph)
 
         assert shiny_assembler.assemble(sequence[:ksize]) == sequence
 
@@ -78,3 +78,34 @@ test session via your `conftest.py`, in which you could just stick:
 .. code:: python
 
     from debruijnal_enhance_o_tron.fixtures import *
+
+
+Using the Fixtures
+------------------
+
+You'll want to look at the documentation for each fixture in
+`debruijnal_enhance_o_tron/fixtures/`, but for the most part
+they return the constituent sequences and the position of
+important structural decision nodes. For example, the `right_fork`
+fixtures gives the core sequence, the branch sequence, and the left
+index of the decision node within the core sequence:
+
+.. code:: python
+
+    def test_fork(right_fork, length, ksize):
+        (core_sequence, fork_sequence), position = right_fork()
+        #stuff
+
+Note that the subgraph fixture return a *function* than can be called repeatedly
+to generate more subgraphs.
+
+By default, the sequences are not added to any dBG; however, if you've
+overridden the `graph` fixture and provided an adapter as described above,
+you can bring in the `consumer` fixture which will add add the sequences:
+
+.. code:: python
+
+    def test_consume_fork(right_fork, ksize, graph, consumer):
+        (core_sequence, fork_sequence), position = right_fork()
+
+        assert graph.get(core_sequence[:ksize])
