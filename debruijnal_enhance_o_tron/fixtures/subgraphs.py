@@ -124,9 +124,13 @@ def right_tip(request, ksize, random_sequence):
     '''
     def get():
         sequence = random_sequence()
-        S = len(sequence) // 2
+        S = (len(sequence) // 2) - (ksize // 2)
         # right of the HDN
         R = S + 1
+
+        if S < 1:
+            raise ValueError("ksize too large for length")
+
         # the branch kmer
         tip = mutate_position(sequence[R:R+ksize], -1)
 
@@ -143,7 +147,7 @@ def right_tip(request, ksize, random_sequence):
 
 
 @pytest.fixture
-def right_fork(request, ksize, right_tip, random_sequence):
+def right_fork(request, ksize, length, right_tip, random_sequence):
     '''
     Sets up a graph structure like so:
                                                branch
@@ -163,7 +167,7 @@ def right_fork(request, ksize, right_tip, random_sequence):
         branch_sequence = random_sequence()
         print('Branch len:', len(branch_sequence))
 
-        branch_sequence = tip + random_sequence()
+        branch_sequence = tip + random_sequence()[:length-S-ksize]
 
         graph = do_consume(request, core_sequence, branch_sequence)
         if graph:
@@ -181,7 +185,7 @@ def right_fork(request, ksize, right_tip, random_sequence):
 
 
 @pytest.fixture
-def right_triple_fork(request, ksize, right_fork, random_sequence):
+def right_triple_fork(request, ksize, length, right_fork, random_sequence):
     '''
     Sets up a graph structure like so:
 
@@ -198,7 +202,7 @@ def right_triple_fork(request, ksize, right_fork, random_sequence):
     
     def get():
         (core_sequence, top_branch), S = right_fork()
-        bottom_branch = random_sequence()
+        bottom_branch = random_sequence()[:length-S-ksize]
         print(len(core_sequence), len(top_branch), len(bottom_branch))
 
         # the branch sequence, mutated at position S+1
@@ -252,8 +256,11 @@ def snp_bubble(request, ksize, linear_path):
 
     def get():
         wildtype_sequence = linear_path()
-        HDN_L = len(wildtype_sequence) // 2
+        HDN_L = (len(wildtype_sequence) // 2) - ksize
         HDN_R = HDN_L + ksize + 1
+
+        if HDN_L < 1:
+            raise ValueError("ksize too long for length")
 
         snp_sequence = mutate_position(wildtype_sequence, HDN_L + ksize)
 
