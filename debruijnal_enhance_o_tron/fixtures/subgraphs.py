@@ -163,9 +163,7 @@ def right_fork(request, ksize, length, right_tip, random_sequence):
 
     def get():
         (core_sequence, tip), S = right_tip()
-        print('\nCore Len:', len(core_sequence))
         branch_sequence = random_sequence()
-        print('Branch len:', len(branch_sequence))
 
         branch_sequence = tip + random_sequence()[:length-S-ksize]
 
@@ -203,7 +201,6 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
     def get():
         (core_sequence, top_branch), S = right_fork()
         bottom_branch = random_sequence()[:length-S-ksize]
-        print(len(core_sequence), len(top_branch), len(bottom_branch))
 
         # the branch sequence, mutated at position S+1
         # choose a base not already represented at that position
