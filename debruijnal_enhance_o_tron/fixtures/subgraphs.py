@@ -8,6 +8,8 @@ from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 get_random_sequence,
                                                 reads,
                                                 kmers,
+                                                left_kmers,
+                                                right_kmers,
                                                 revcomp)
 
 
@@ -101,6 +103,37 @@ def linear_path(request, ksize, random_sequence):
             request.applymarker(pytest.mark.xfail)
 
         return sequence
+
+    return get
+
+
+@pytest.fixture
+def right_sea(request, ksize, random_sequence):
+    '''Sets up a C shaped graph structure:
+                ([1:1+K])→o~~o→[-1] top
+              ↗
+    ([:K] HDN)→ ([1:1+K])→o~~o→[-1] bottom
+
+    That is, HDN has in-degree of 0 and out-degree of 2:
+    the minimal-degree decision node.
+    '''
+
+    def get():
+        top = random_sequence()
+        bottom = random_sequence()
+        hdn = random_sequence(length=ksize)
+        top = hdn + top
+        bottom = list(hdn + bottom)
+        # make sure the HDN really is the HDN...
+        bottom[ksize] = mutate_base(top[ksize])
+        bottom = ''.join(bottom)
+
+        graph = do_consume(request, top, bottom)
+        if graph and count_decision_nodes(core,
+                                          graph,
+                                          ksize) != {(0,2): 1}:
+            request.applymarker(pytest.mark.xfail)
+        return top, bottom
 
     return get
 
@@ -277,6 +310,33 @@ def snp_bubble(request, ksize, linear_path):
         return (wildtype_sequence, snp_sequence), HDN_L, HDN_R
 
     return get
+
+
+@pytest.fixture
+def tandem_quad_forks(request, ksize, length, linear_path, random_sequence):
+
+    def get():
+        core = linear_path()
+        S_l = (len(core) // 2) - ksize
+        S_r = S_l + 1
+
+        left_branches = [kmer + random_sequence(exclude=kmer) \
+                         for kmer in right_kmers(core[S_l:S_l+ksize]) \
+                         if kmer not in core]
+        right_branches = [kmer + random_sequence(exclude=kmer) \
+                          for kmer in right_kmers(core[S_r:S_r+ksize]) \
+                          if kmer not in core]
+
+        graph = do_consume(request, core, *left_branches, *right_branches)
+        if graph:
+            decision_nodes = count_decision_nodes(core, graph, ksize)
+            if not decision_nodes == {(1,4): 2}:
+                request.applymarker(pytest.mark.xfail)
+
+        return (core, left_branches, right_branches), S_l, S_r
+    
+    return get
+
 
 
 @pytest.fixture(params=[2,6,10], ids=lambda r: 'repeats={0}'.format(r))

@@ -135,4 +135,11 @@ def kmers(sequence, K):
     for i in range(len(sequence) - K + 1):
         yield sequence[i:i + K]
 
+def left_kmers(kmer):
+    for b in 'ACGT':
+        yield b + kmer[:-1]
 
+
+def right_kmers(kmer):
+    for b in 'ACGT':
+        yield kmer[1:] + b

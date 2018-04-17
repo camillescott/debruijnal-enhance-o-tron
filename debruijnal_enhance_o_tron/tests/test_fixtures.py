@@ -100,6 +100,13 @@ def test_linear_path(linear_path, ksize, length):
     assert len(sequence) == length
 
 
+def test_right_sea(right_sea, ksize, length):
+    top, bottom = right_sea()
+    assert len(top) == len(bottom)
+    assert len(top) == length + ksize
+    assert top[:ksize] == bottom[:ksize]
+
+
 def test_right_tip(right_tip, ksize, length):
     (core, tip), S = right_tip()
     assert len(core) == length

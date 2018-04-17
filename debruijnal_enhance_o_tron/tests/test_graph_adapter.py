@@ -61,6 +61,15 @@ def test_linear_path_consume(linear_path, graph, consumer, ksize, length):
         assert graph.get(kmer)
 
 
+def test_right_sea_consume(right_sea, graph, consumer, ksize, length):
+    top, bottom = right_sea()
+    assert subgraphs.count_decision_nodes(top, graph, ksize) == {(0, 2): 1}
+
+    for kmer in chain(kmers(top, ksize),
+                      kmers(bottom, ksize)):
+        assert graph.get(kmer)
+
+
 def test_right_tip_noconsume(right_tip, graph, ksize, length):
     (sequence, tip), S = right_tip()
 
@@ -132,6 +141,17 @@ def test_snp_bubble_consume(snp_bubble, graph, consumer, ksize, length):
     for kmer in chain(kmers(wildtype, ksize),
                       kmers(snp, ksize)):
         assert graph.get(kmer)
+
+
+def test_tandem_quad_forks(tandem_quad_forks, graph, consumer, ksize, length):
+    (core, left_branches, right_branches), S_l, S_r = tandem_quad_forks()
+    assert subgraphs.count_decision_nodes(core, graph, ksize) == {(1,4): 2}
+    
+    assert graph.left_degree(core[S_l:S_l+ksize]) == 1
+    assert graph.right_degree(core[S_l:S_l+ksize]) == 4
+
+    assert graph.left_degree(core[S_r:S_r+ksize]) == 1
+    assert graph.right_degree(core[S_r:S_r+ksize]) == 4
 
 
 def test_tandem_repeat_lt_ksize_noconsume(tandem_repeats_lt_ksize,

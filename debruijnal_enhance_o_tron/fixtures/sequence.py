@@ -61,7 +61,7 @@ def using_length(L):
 def random_sequence(request, ksize, length):
     global_seen = set()
 
-    def get(exclude=None):
+    def get(exclude=None, length=length):
 
         try:
             sequence = get_random_sequence(length, 
