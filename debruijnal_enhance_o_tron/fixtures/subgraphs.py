@@ -93,7 +93,6 @@ def conditional_check_fp(request, *args):
 
         graph = request.getfixturevalue('graph')
         check_graph = graph.shallow_clone()
-        check_graph.reset()
         for sequence in args:
             check_graph.add(sequence)
         return check_graph
