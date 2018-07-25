@@ -5,7 +5,7 @@ import pytest
 from debruijnal_enhance_o_tron.fixtures import subgraphs
 from debruijnal_enhance_o_tron.fixtures.sequence import (using_ksize,
                                                          using_length)
-from debruijnal_enhance_o_tron.sequence import kmers
+from debruijnal_enhance_o_tron.sequence import kmers, get_random_sequence
 
 
 class BaseGraph(subgraphs.GraphAdapter):
@@ -17,6 +17,14 @@ class BaseGraph(subgraphs.GraphAdapter):
         self.store = set()
         self.ksize = ksize
         super().__init__(*args, **kwargs)
+
+    def reset(self):
+        self.store.clear()
+
+    def clone(self):
+        other = BaseGraph(self.ksize)
+        other.store = set(self.store)
+        return other
 
     def get(self, item):
         return item in self.store
@@ -208,3 +216,40 @@ def test_circular_consume(circular, graph, consumer, length, ksize):
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
+
+
+@using_ksize([7,9,11])
+@using_length([100] * 25)
+def test_sequence_generator_degree(graph, length, ksize, random_sequence):
+    seqs = [random_sequence() for _ in range(10)]
+    for seq in seqs:
+        graph.add(seq)
+    for seq in seqs:
+        seq_kmers = list(kmers(seq, ksize))
+        assert graph.left_degree(seq_kmers[0]) == 0
+        assert graph.right_degree(seq_kmers[0]) == 1
+        for kmer in seq_kmers[1:-1]:
+            assert graph.left_degree(kmer) == 1
+            assert graph.right_degree(kmer) == 1
+        assert graph.left_degree(seq_kmers[-1]) == 1
+        assert graph.right_degree(seq_kmers[-1]) == 0
+
+
+@using_ksize([7,9,11])
+@using_length([100] * 25)
+@pytest.mark.check_fp
+def test_sequence_generator_degree_with_fp(graph, length, ksize, linear_path):
+    seqs = [linear_path() for _ in range(10)]
+    for seq in seqs:
+        graph.add(seq)
+    for seq in seqs:
+        seq_kmers = list(kmers(seq, ksize))
+        assert graph.left_degree(seq_kmers[0]) == 0
+        assert graph.right_degree(seq_kmers[0]) == 1
+        for kmer in seq_kmers[1:-1]:
+            assert graph.left_degree(kmer) == 1
+            assert graph.right_degree(kmer) == 1
+        assert graph.left_degree(seq_kmers[-1]) == 1
+        assert graph.right_degree(seq_kmers[-1]) == 0
+
+

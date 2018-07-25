@@ -77,19 +77,16 @@ def get_random_sequence(length, ksize, exclude=None, seen=None):
 
     seen = set() if seen is None else seen.copy()
 
-    def add_seen(kmer):
-        seen.add(kmer)
-
     if exclude is not None:
         for kmer in kmers(exclude, ksize - 1):
-            add_seen(kmer)
+            seen.add(kmer)
     
     # start off the sequence, make sure it doesn't overlap
     # with our exlcusions
     seq = _get_random_sequence(ksize - 1)
     while seq in seen:
         seq = _get_random_sequence(ksize - 1)
-    add_seen(seq)
+    seen.add(seq)
     seq = list(seq)
 
     # now extend the sequence one base at a time, checking k-1-mer
@@ -101,10 +98,11 @@ def get_random_sequence(length, ksize, exclude=None, seen=None):
         i += 1
         next_base = get_random_base()
         next_kmer = ''.join(seq[-ksize + 2:] + [next_base])
+        assert len(next_kmer) == ksize - 1
 
         if (next_kmer) not in seen:
             seq.append(next_base)
-            add_seen(next_kmer)
+            seen.add(next_kmer)
         else:
             continue
 

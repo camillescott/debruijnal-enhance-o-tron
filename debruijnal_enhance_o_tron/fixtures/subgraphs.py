@@ -67,7 +67,7 @@ def consumer(request, graph):
     return graph, consume
 
 
-def do_consume(request, *args):
+def conditional_consume(request, *args):
     '''Check if the consumer fixture is active in this request,
     and if so, use it to consume the sequences into the graph.
 
@@ -78,10 +78,19 @@ def do_consume(request, *args):
     if 'consumer' in request.fixturenames:
         graph, consume = request.getfixturevalue('consumer')
         consume(args)
-        if request.node.get_marker('check_fp') is not None:
-            return graph
-        else:
-            return False
+
+
+def conditional_check_fp(request, *args):
+
+    if request.node.get_marker('check_fp') is not None \
+       and 'graph' in request.fixturenames:
+
+        graph = request.getfixturevalue('graph')
+        check_graph = graph.clone()
+        check_graph.reset()
+        for sequence in args:
+            check_graph.add(sequence)
+        return check_graph
     else:
         return False
 
@@ -98,7 +107,8 @@ def linear_path(request, ksize, random_sequence):
 
         # Check for false positive neighbors in our graph
         # Mark as an expected failure if any are found
-        graph = do_consume(request, sequence)
+        conditional_consume(request, sequence)
+        graph = conditional_check_fp(request, sequence)
         if graph and count_decision_nodes(sequence, graph, ksize):
             request.applymarker(pytest.mark.xfail)
 
@@ -128,7 +138,8 @@ def right_sea(request, ksize, random_sequence):
         bottom[ksize] = mutate_base(top[ksize])
         bottom = ''.join(bottom)
 
-        graph = do_consume(request, top, bottom)
+        conditional_consume(request, top, bottom)
+        graph = conditional_check_fp(request, top, bottom)
         if graph and count_decision_nodes(core,
                                           graph,
                                           ksize) != {(0,2): 1}:
@@ -168,7 +179,8 @@ def right_tip(request, ksize, random_sequence):
         tip = mutate_position(sequence[R:R+ksize], -1)
 
         # Check for false positive neighbors and mark as expected failure if found
-        graph = do_consume(request, sequence, tip)
+        conditional_consume(request, sequence, tip)
+        graph = conditional_check_fp(request, sequence, tip)
         if graph and count_decision_nodes(sequence,
                                           graph,
                                           ksize) != {(1,2): 1}:
@@ -200,7 +212,8 @@ def right_fork(request, ksize, length, right_tip, random_sequence):
 
         branch_sequence = tip + random_sequence()[:length-S-ksize]
 
-        graph = do_consume(request, core_sequence, branch_sequence)
+        conditional_consume(request, core_sequence, branch_sequence)
+        graph = conditional_check_fp(request, core_sequence, branch_sequence)
         if graph:
             # Check for false positive neighbors
             core_decision_nodes = count_decision_nodes(core_sequence, graph, ksize)
@@ -244,7 +257,8 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
         bottom_branch = top_branch[:ksize - 1] + mutated + bottom_branch
 
         
-        graph = do_consume(request, core_sequence, bottom_branch, top_branch)
+        conditional_consume(request, core_sequence, bottom_branch, top_branch)
+        graph = conditional_check_fp(request, core_sequence, bottom_branch, top_branch)
         if graph:
             core_decision_nodes = count_decision_nodes(core_sequence,
                                                        graph,
@@ -256,7 +270,6 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
         return (core_sequence, top_branch, bottom_branch), S 
 
     return get
-
 
 
 @pytest.fixture
@@ -294,7 +307,8 @@ def snp_bubble(request, ksize, linear_path):
 
         snp_sequence = mutate_position(wildtype_sequence, HDN_L + ksize)
 
-        graph = do_consume(request, wildtype_sequence, snp_sequence)
+        conditional_consume(request, wildtype_sequence, snp_sequence)
+        graph = conditional_check_fp(request, wildtype_sequence, snp_sequence)
         if graph:
             wildtype_decision_nodes = count_decision_nodes(wildtype_sequence,
                                                            graph,
@@ -327,7 +341,8 @@ def tandem_quad_forks(request, ksize, length, linear_path, random_sequence):
                           for kmer in right_kmers(core[S_r:S_r+ksize]) \
                           if kmer not in core]
 
-        graph = do_consume(request, core, *left_branches, *right_branches)
+        conditional_consume(request, core, *left_branches, *right_branches)
+        graph = conditional_check_fp(request, core, *left_branches, *right_branches)
         if graph:
             decision_nodes = count_decision_nodes(core, graph, ksize)
             if not decision_nodes == {(1,4): 2}:
@@ -336,7 +351,6 @@ def tandem_quad_forks(request, ksize, length, linear_path, random_sequence):
         return (core, left_branches, right_branches), S_l, S_r
     
     return get
-
 
 
 @pytest.fixture(params=[2,6,10], ids=lambda r: 'repeats={0}'.format(r))
@@ -348,7 +362,8 @@ def tandem_repeats_lt_ksize(request, ksize):
         repeat = _get_random_sequence(ksize - 2)
         tandem_repeats = repeat * request.param
 
-        graph = do_consume(request, tandem_repeats)
+        conditional_consume(request, tandem_repeats)
+        graph = conditional_check_fp(request, tandem_repeats)
         if graph and count_decision_nodes(tandem_repeats, graph, ksize):
             request.applymarker(pytest.mark.xfail)
 
@@ -364,7 +379,8 @@ def tandem_repeats_gt_ksize(request, ksize):
         repeat = _get_random_sequence(ksize * 2)
         tandem_repeats = repeat * request.param
 
-        graph = do_consume(request, tandem_repeats)
+        conditional_consume(request, tandem_repeats)
+        graph = conditional_check_fp(request, tandem_repeats)
         if graph and count_decision_nodes(tandem_repeats, graph, ksize):
             request.applymarker(pytest.mark.xfail)
 
@@ -380,7 +396,8 @@ def circular(request, linear_path):
         sequence = linear_path()
         sequence += sequence
 
-        graph = do_consume(request, sequence)
+        conditional_consume(request, sequence)
+        graph = conditional_check_fp(request, sequence)
         if graph and count_decision_nodes(sequence, graph, ksize):
             request.applymarker(pytest.mark.xfail)
 

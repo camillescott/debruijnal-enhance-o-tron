@@ -69,10 +69,10 @@ def random_sequence(request, ksize, length):
                                            exclude=exclude,
                                            seen=global_seen)
         except ValueError:
-            request.applymarker(pytest.mark.xfail)
+            pytest.xfail('Failed to generate sequence of given length and k-size')
 
-        for i in range(len(sequence)-ksize):
-            global_seen.add(sequence[i:i+ksize-1])
+        for kmer in kmers(sequence, ksize-1):
+            global_seen.add(kmer)
 
         return sequence
 
