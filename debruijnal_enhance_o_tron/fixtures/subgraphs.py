@@ -30,6 +30,12 @@ class GraphAdapter(object):
     def right_degree(self, item):
         raise NotImplementedError()
 
+    def reset(self):
+        raise NotImplementedError()
+
+    def shallow_clone(self):
+        raise NotImplementedError()
+
     def degree(self, item):
         return self.right_degree(item) + self.left_degree(item)
 
@@ -86,7 +92,7 @@ def conditional_check_fp(request, *args):
        and 'graph' in request.fixturenames:
 
         graph = request.getfixturevalue('graph')
-        check_graph = graph.clone()
+        check_graph = graph.shallow_clone()
         check_graph.reset()
         for sequence in args:
             check_graph.add(sequence)

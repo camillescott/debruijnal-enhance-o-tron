@@ -21,9 +21,8 @@ class BaseGraph(subgraphs.GraphAdapter):
     def reset(self):
         self.store.clear()
 
-    def clone(self):
+    def shallow_clone(self):
         other = BaseGraph(self.ksize)
-        other.store = set(self.store)
         return other
 
     def get(self, item):
