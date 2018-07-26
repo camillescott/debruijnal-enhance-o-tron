@@ -104,12 +104,12 @@ def conditional_check_fp(request, *args):
         return False
 
 
-def check_fp_xfail():
-    pytest.xfail('Generated subgraph failed false positive test.')
+def check_fp_xfail(request):
+    pytest.xfail('False-positive check FAILED ({}).'.format(request.fixturename))
 
 
-def check_fp_pass():
-    print('False-positive check PASS.')
+def check_fp_pass(request):
+    print('False-positive check PASS ({}).'.format(request.fixturename))
 
 
 @pytest.fixture
@@ -128,9 +128,9 @@ def linear_path(request, ksize, random_sequence):
         graph = conditional_check_fp(request, sequence)
         if graph:
             if count_decision_nodes(sequence, graph, ksize):
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return sequence
 
@@ -164,9 +164,9 @@ def right_sea(request, ksize, random_sequence):
             if count_decision_nodes(core,
                                     graph,
                                     ksize) != {(0,2): 1}:
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return top, bottom
 
@@ -209,9 +209,9 @@ def right_tip(request, ksize, random_sequence):
             if count_decision_nodes(sequence,
                                     graph,
                                     ksize) != {(1,2): 1}:
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return (sequence, tip), S
 
@@ -248,9 +248,9 @@ def right_fork(request, ksize, length, right_tip, random_sequence):
             # the core sequence should conain a decision node 
             # with ldegree of 1 and rdegre of 2
             if core_decision_nodes != {(1,2): 1}:
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return (core_sequence, branch_sequence), S
 
@@ -294,9 +294,9 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
                                                        ksize)
 
             if not (core_decision_nodes == {(1,3): 1}):
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return (core_sequence, top_branch, bottom_branch), S 
 
@@ -350,9 +350,9 @@ def snp_bubble(request, ksize, linear_path):
             if not (snp_decision_nodes == \
                     wildtype_decision_nodes == \
                     {(1,2): 1, (2,1):1}):
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return (wildtype_sequence, snp_sequence), HDN_L, HDN_R
 
@@ -379,9 +379,9 @@ def tandem_quad_forks(request, ksize, length, linear_path, random_sequence):
         if graph:
             decision_nodes = count_decision_nodes(core, graph, ksize)
             if not decision_nodes == {(1,4): 2}:
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return (core, left_branches, right_branches), S_l, S_r
     
@@ -401,9 +401,9 @@ def tandem_repeats_lt_ksize(request, ksize):
         graph = conditional_check_fp(request, tandem_repeats)
         if graph:
             if count_decision_nodes(tandem_repeats, graph, ksize):
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
 
         return (repeat, tandem_repeats), request.param
@@ -422,9 +422,9 @@ def tandem_repeats_gt_ksize(request, ksize):
         graph = conditional_check_fp(request, tandem_repeats)
         if graph:
             if count_decision_nodes(tandem_repeats, graph, ksize):
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return (repeat, tandem_repeats), request.param
 
@@ -442,9 +442,9 @@ def circular(request, linear_path):
         graph = conditional_check_fp(request, sequence)
         if graph:
             if count_decision_nodes(sequence, graph, ksize):
-                check_fp_xfail()
+                check_fp_xfail(request)
             else:
-                check_fp_pass()
+                check_fp_pass(request)
 
         return sequence
 
