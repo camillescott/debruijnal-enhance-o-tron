@@ -93,6 +93,10 @@ def conditional_check_fp(request, *args):
 
         graph = request.getfixturevalue('graph')
         check_graph = graph.shallow_clone()
+
+        for sequence in args:
+            for kmer in kmers(sequence, request.getfixturevalue('ksize')):
+                assert graph.get(kmer) == False
         for sequence in args:
             check_graph.add(sequence)
         return check_graph
