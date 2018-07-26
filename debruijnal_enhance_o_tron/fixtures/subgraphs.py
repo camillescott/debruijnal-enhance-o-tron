@@ -163,7 +163,10 @@ def right_sea(request, ksize, random_sequence):
         if graph:
             if count_decision_nodes(core,
                                     graph,
-                                    ksize) != {(0,2): 1}:
+                                    ksize) != {(0,2): 1} or\
+               count_decision_nodes(top, graph, ksize) or\
+               count_decision_nodes(bottom, graph, ksize):
+
                 check_fp_xfail(request)
             else:
                 check_fp_pass(request)
@@ -208,7 +211,8 @@ def right_tip(request, ksize, random_sequence):
         if graph:
             if count_decision_nodes(sequence,
                                     graph,
-                                    ksize) != {(1,2): 1}:
+                                    ksize) != {(1,2): 1} or \
+               count_decision_nodes(tip, graph, ksize):
                 check_fp_xfail(request)
             else:
                 check_fp_pass(request)
@@ -244,10 +248,11 @@ def right_fork(request, ksize, length, right_tip, random_sequence):
         if graph:
             # Check for false positive neighbors
             core_decision_nodes = count_decision_nodes(core_sequence, graph, ksize)
+            branch_decision_nodes = count_decision_nodes(branch_sequence, graph, ksize)
 
             # the core sequence should conain a decision node 
             # with ldegree of 1 and rdegre of 2
-            if core_decision_nodes != {(1,2): 1}:
+            if core_decision_nodes != {(1,2): 1} or branch_decision_nodes:
                 check_fp_xfail(request)
             else:
                 check_fp_pass(request)
@@ -293,7 +298,8 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
                                                        graph,
                                                        ksize)
 
-            if not (core_decision_nodes == {(1,3): 1}):
+            if not (core_decision_nodes == {(1,3): 1}) or \
+                   count_decision_nodes(bottom_branch, graph, ksize):
                 check_fp_xfail(request)
             else:
                 check_fp_pass(request)
