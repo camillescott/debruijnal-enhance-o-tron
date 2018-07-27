@@ -96,7 +96,8 @@ def conditional_check_fp(request, *args):
 
         for sequence in args:
             for kmer in kmers(sequence, request.getfixturevalue('ksize')):
-                assert graph.get(kmer) == False
+                if graph.get(kmer):
+                    check_fp_xfail()
         for sequence in args:
             check_graph.add(sequence)
         return check_graph
