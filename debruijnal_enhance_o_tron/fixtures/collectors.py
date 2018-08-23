@@ -59,7 +59,7 @@ def check_fp_collector(request):
         for func_pair in args:
             if type(func_pair) is not tuple:
                 raise TypeError('_check_fp_collector expects a tuple of (function, result)')
-            check_collector.add(request.node.parent.name, func_pair)
+            check_collector.add(inspect.stack()[1][3], func_pair)
         return check_collector
 
     return add

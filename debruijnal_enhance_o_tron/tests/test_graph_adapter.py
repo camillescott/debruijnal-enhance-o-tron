@@ -121,6 +121,19 @@ def test_right_fork_consume(right_fork, graph, ksize, length, consume):
         assert graph.get(kmer)
 
 
+def test_left_fork_consume(left_fork, graph, ksize, length, consume):
+    (sequence, branch), pos = left_fork()
+    consume()
+
+    assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(2,1): 1}
+    assert graph.left_degree(sequence[pos:pos+ksize]) == 2
+    assert graph.right_degree(sequence[pos:pos+ksize]) == 1
+
+    for kmer in chain(kmers(sequence, ksize),
+                      kmers(branch, ksize)):
+        assert graph.get(kmer)
+
+
 def test_right_triple_fork_noconsume(right_triple_fork, graph, ksize, length):
     (core, top, bottom), S = right_triple_fork()
 

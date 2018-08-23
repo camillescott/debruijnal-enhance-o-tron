@@ -201,11 +201,30 @@ def right_fork(request, ksize, length, right_tip, random_sequence,
 
 
 @pytest.fixture
-def left_fork(request, right_fork):
+def left_fork(request, ksize, length, right_fork, consume_collector, check_fp_collector):
 
     def _left_fork():
         (core_sequence, branch), pos = right_fork()
+        core_sequence = revcomp(core_sequence)
+        branch = revcomp(branch)
+        pos = length - pos - ksize
         
+        _collector = consume_collector()
+        _collector.pop() # remove previous two fixtures that compose right_fork
+        _collector.pop()
+        consume_collector(core_sequence, branch)
+        _collector = check_fp_collector()
+        _collector.pop()
+        _collector.pop()
+        check_fp_collector((lambda G: count_decision_nodes(core_sequence,
+                                                           G,
+                                                           ksize),
+                            {(2,1): 1}),
+                           (lambda G: count_decision_nodes(branch, G, ksize), {}))
+
+        return (core_sequence, branch), pos
+
+    return _left_fork
         
 
 
