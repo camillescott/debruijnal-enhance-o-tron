@@ -5,6 +5,7 @@ import pytest
 from debruijnal_enhance_o_tron.fixtures import subgraphs
 from debruijnal_enhance_o_tron.fixtures.sequence import (using_ksize,
                                                          using_length)
+from debruijnal_enhance_o_tron.fixtures.collectors import (consume, check_fp)
 from debruijnal_enhance_o_tron.sequence import kmers, get_random_sequence
 
 
@@ -60,16 +61,20 @@ def test_linear_path_noconsume(linear_path, graph, ksize, length):
         assert not graph.get(kmer)
 
 
-def test_linear_path_consume(linear_path, graph, consumer, ksize, length):
+def test_linear_path_consume(linear_path, graph, ksize, length, consume):
     sequence = linear_path()
+    consume()
+
     assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {}
 
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
 
 
-def test_right_sea_consume(right_sea, graph, consumer, ksize, length):
+def test_right_sea_consume(right_sea, graph, ksize, length, consume):
     top, bottom = right_sea()
+    consume()
+
     assert subgraphs.count_decision_nodes(top, graph, ksize) == {(0, 2): 1}
 
     for kmer in chain(kmers(top, ksize),
@@ -85,8 +90,10 @@ def test_right_tip_noconsume(right_tip, graph, ksize, length):
         assert not graph.get(kmer)
 
 
-def test_right_tip_consume(right_tip, graph, consumer, ksize, length):
+def test_right_tip_consume(right_tip, graph, ksize, length, consume):
     (sequence, tip), S = right_tip()
+    consume()
+
     assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(1,2): 1}
 
     for kmer in chain(kmers(sequence, ksize),
@@ -103,8 +110,10 @@ def test_right_fork_noconsume(right_fork, graph, ksize, length):
         assert not graph.get(kmer)
 
 
-def test_right_fork_consume(right_fork, graph, consumer, ksize, length):
+def test_right_fork_consume(right_fork, graph, ksize, length, consume):
     (sequence, branch), S = right_fork()
+    consume()
+
     assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(1,2): 1}
 
     for kmer in chain(kmers(sequence, ksize),
@@ -122,8 +131,10 @@ def test_right_triple_fork_noconsume(right_triple_fork, graph, ksize, length):
 
 
 def test_right_triple_fork_consume(right_triple_fork, graph, 
-                                     consumer, ksize, length):
+                                   ksize, length, consume):
     (core, top, bottom), S = right_triple_fork()
+    consume()
+
     assert subgraphs.count_decision_nodes(core, graph, ksize) == {(1,3): 1}
 
     for kmer in chain(kmers(core, ksize),
@@ -140,8 +151,10 @@ def test_snp_bubble_noconsume(snp_bubble, graph, ksize, length):
         assert not graph.get(kmer)
 
 
-def test_snp_bubble_consume(snp_bubble, graph, consumer, ksize, length):
+def test_snp_bubble_consume(snp_bubble, graph, ksize, length, consume):
     (wildtype, snp), L, R = snp_bubble()
+    consume()
+
     assert subgraphs.count_decision_nodes(wildtype, graph, ksize) \
             == {(1,2): 1, (2,1):1}
 
@@ -150,8 +163,10 @@ def test_snp_bubble_consume(snp_bubble, graph, consumer, ksize, length):
         assert graph.get(kmer)
 
 
-def test_tandem_quad_forks(tandem_quad_forks, graph, consumer, ksize, length):
+def test_tandem_quad_forks(tandem_quad_forks, graph, ksize, length, consume):
     (core, left_branches, right_branches), S_l, S_r = tandem_quad_forks()
+    consume()
+
     assert subgraphs.count_decision_nodes(core, graph, ksize) == {(1,4): 2}
     
     assert graph.left_degree(core[S_l:S_l+ksize]) == 1
@@ -173,8 +188,10 @@ def test_tandem_repeat_lt_ksize_noconsume(tandem_repeats_lt_ksize,
 def test_tandem_repeat_lt_ksize_consume(tandem_repeats_lt_ksize,
                                           ksize,
                                           graph,
-                                          consumer):
+                                          consume):
     (repeat, tandem_repeats), n_repeats = tandem_repeats_lt_ksize()
+    consume()
+
     assert not subgraphs.count_decision_nodes(tandem_repeats, graph, ksize)
 
     for kmer in kmers(tandem_repeats, ksize):
@@ -193,8 +210,10 @@ def test_tandem_repeat_gt_ksize_noconsume(tandem_repeats_gt_ksize,
 def test_tandem_repeat_gt_ksize_consume(tandem_repeats_gt_ksize,
                                           ksize,
                                           graph,
-                                          consumer):
+                                          consume):
     (repeat, tandem_repeats), n_repeats = tandem_repeats_gt_ksize()
+    consume()
+
     assert not subgraphs.count_decision_nodes(tandem_repeats, graph, ksize)
 
     for kmer in kmers(tandem_repeats, ksize):
@@ -208,8 +227,10 @@ def test_circular_noconsume(circular, graph, length, ksize):
         assert not graph.get(kmer)
 
 
-def test_circular_consume(circular, graph, consumer, length, ksize):
+def test_circular_consume(circular, graph, length, ksize, consume):
     sequence = circular()
+    consume()
+
     assert not subgraphs.count_decision_nodes(sequence, graph, ksize)
     assert graph.left_degree(sequence[:ksize]) == 1
 
@@ -236,9 +257,10 @@ def test_sequence_generator_degree(graph, length, ksize, random_sequence):
 
 @using_ksize([7,9,11])
 @using_length([100] * 25)
-@pytest.mark.check_fp
-def test_sequence_generator_degree_with_fp(graph, length, ksize, linear_path):
+def test_sequence_generator_degree_with_fp(graph, length, ksize, linear_path, check_fp):
     seqs = [linear_path() for _ in range(10)]
+    check_fp()
+
     for seq in seqs:
         graph.add(seq)
     for seq in seqs:

@@ -87,14 +87,6 @@ def test_graph_adapter_noimpl(graph, ksize):
         graph.degree(None)
 
 
-def test_consumer_noimpl(consumer):
-    graph, consume = consumer
-    with pytest.raises(NotImplementedError):
-        graph.get(None)
-    with pytest.raises(NotImplementedError):
-        consume(('AAAAAAA'))
-
-
 def test_linear_path(linear_path, ksize, length):
     sequence = linear_path()
     assert len(sequence) == length

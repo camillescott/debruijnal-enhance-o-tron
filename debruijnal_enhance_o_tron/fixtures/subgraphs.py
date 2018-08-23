@@ -11,6 +11,7 @@ from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 left_kmers,
                                                 right_kmers,
                                                 revcomp)
+from debruijnal_enhance_o_tron.fixtures.collectors import (consume_collector, check_fp_collector)
 
 
 class GraphAdapter(object):
@@ -65,81 +66,27 @@ def graph(ksize):
     return GraphAdapter()
 
 
-@pytest.fixture
-def consumer(request, graph):
-    def consume(sequences):
-        for sequence in sequences:
-            graph.add(sequence)
-    return graph, consume
-
-
-def conditional_consume(request, *args):
-    '''Check if the consumer fixture is active in this request,
-    and if so, use it to consume the sequences into the graph.
-
-    Returns False if consumer is not active OR the check_fp
-    marker is not active on the test.
-    '''
-
-    if 'consumer' in request.fixturenames:
-        graph, consume = request.getfixturevalue('consumer')
-        consume(args)
-
-
-def conditional_check_fp(request, *args):
-
-    if request.node.get_marker('check_fp') is not None \
-       and 'graph' in request.fixturenames:
-
-        graph = request.getfixturevalue('graph')
-        check_graph = graph.shallow_clone()
-
-        for sequence in args:
-            for kmer in kmers(sequence, request.getfixturevalue('ksize')):
-                if graph.get(kmer):
-                    check_fp_xfail()
-        for sequence in args:
-            check_graph.add(sequence)
-        return check_graph
-    else:
-        return False
-
-
-def check_fp_xfail(request):
-    pytest.xfail('False-positive check FAILED ({}).'.format(request.fixturename))
-
-
-def check_fp_pass(request):
-    print('False-positive check PASS ({}).'.format(request.fixturename))
-
 
 @pytest.fixture
-def linear_path(request, ksize, random_sequence):
+def linear_path(request, ksize, random_sequence, consume_collector, check_fp_collector):
     '''Simple linear path graph structure.
 
     sequence
     [0]→o→o~~o→o→[-1]
     '''
-    def get():
+    def _linear_path():
         sequence = random_sequence()
 
-        # Check for false positive neighbors in our graph
-        # Mark as an expected failure if any are found
-        conditional_consume(request, sequence)
-        graph = conditional_check_fp(request, sequence)
-        if graph:
-            if count_decision_nodes(sequence, graph, ksize):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(sequence)
+        check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {}))
 
         return sequence
 
-    return get
+    return _linear_path
 
 
 @pytest.fixture
-def right_sea(request, ksize, random_sequence):
+def right_sea(request, ksize, random_sequence, consume_collector, check_fp_collector):
     '''Sets up a C shaped graph structure:
                 ([1:1+K])→o~~o→[-1] top
               ↗
@@ -149,7 +96,7 @@ def right_sea(request, ksize, random_sequence):
     the minimal-degree decision node.
     '''
 
-    def get():
+    def _right_sea():
         top = random_sequence()
         bottom = random_sequence()
         hdn = random_sequence(length=ksize)
@@ -159,26 +106,27 @@ def right_sea(request, ksize, random_sequence):
         bottom[ksize] = mutate_base(top[ksize])
         bottom = ''.join(bottom)
 
-        conditional_consume(request, top, bottom)
-        graph = conditional_check_fp(request, top, bottom)
-        if graph:
-            if count_decision_nodes(core,
-                                    graph,
-                                    ksize) != {(0,2): 1} or\
-               count_decision_nodes(top, graph, ksize) or\
-               count_decision_nodes(bottom, graph, ksize):
-
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(top, bottom)
+        check_fp_collector((lambda G : count_decision_nodes(core,
+                                                             G,
+                                                             ksize),
+                             {(0,2): 1}),
+                            (lambda G: count_decision_nodes(top,
+                                                            G,
+                                                            ksize),
+                             {}),
+                            (lambda G: count_decision_nodes(bottom,
+                                                            G,
+                                                            ksize),
+                             {}))
 
         return top, bottom
 
-    return get
+    return _right_sea
 
 
 @pytest.fixture
-def right_tip(request, ksize, random_sequence):
+def right_tip(request, ksize, random_sequence, consume_collector, check_fp_collector):
     '''
     Sets up a graph structure like so:
                                  ([S+1:S+K]+B tip)
@@ -194,7 +142,7 @@ def right_tip(request, ksize, random_sequence):
 
     The mutated base itself is at S+K
     '''
-    def get():
+    def _right_tip():
         sequence = random_sequence()
         S = (len(sequence) // 2) - (ksize // 2)
         # right of the HDN
@@ -206,25 +154,18 @@ def right_tip(request, ksize, random_sequence):
         # the branch kmer
         tip = mutate_position(sequence[R:R+ksize], -1)
 
-        # Check for false positive neighbors and mark as expected failure if found
-        conditional_consume(request, sequence, tip)
-        graph = conditional_check_fp(request, sequence, tip)
-        if graph:
-            if count_decision_nodes(sequence,
-                                    graph,
-                                    ksize) != {(1,2): 1} or \
-               count_decision_nodes(tip, graph, ksize):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(sequence, tip)
+        check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {(1,2): 1}),
+                            (lambda G: count_decision_nodes(tip, G, ksize), {}))
 
         return (sequence, tip), S
 
-    return get
+    return _right_tip
 
 
 @pytest.fixture
-def right_fork(request, ksize, length, right_tip, random_sequence):
+def right_fork(request, ksize, length, right_tip, random_sequence,
+               consume_collector, check_fp_collector):
     '''
     Sets up a graph structure like so:
                                                branch
@@ -238,33 +179,39 @@ def right_fork(request, ksize, length, right_tip, random_sequence):
     This is a tip with a longer fork length.
     '''
 
-    def get():
+    def _right_fork():
         (core_sequence, tip), S = right_tip()
         branch_sequence = random_sequence()
 
         branch_sequence = tip + random_sequence()[:length-S-ksize]
 
-        conditional_consume(request, core_sequence, branch_sequence)
-        graph = conditional_check_fp(request, core_sequence, branch_sequence)
-        if graph:
-            # Check for false positive neighbors
-            core_decision_nodes = count_decision_nodes(core_sequence, graph, ksize)
-            branch_decision_nodes = count_decision_nodes(branch_sequence, graph, ksize)
-
-            # the core sequence should conain a decision node 
-            # with ldegree of 1 and rdegre of 2
-            if core_decision_nodes != {(1,2): 1} or branch_decision_nodes:
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(core_sequence, branch_sequence)
+        check_fp_collector((lambda G: count_decision_nodes(core_sequence,
+                                                            G,
+                                                            ksize),
+                             {(1,2): 1}),
+                            (lambda G: count_decision_nodes(branch_sequence,
+                                                            G,
+                                                            ksize),
+                             {}))
 
         return (core_sequence, branch_sequence), S
 
-    return get
+    return _right_fork
 
 
 @pytest.fixture
-def right_triple_fork(request, ksize, length, right_fork, random_sequence):
+def left_fork(request, right_fork):
+
+    def _left_fork():
+        (core_sequence, branch), pos = right_fork()
+        
+        
+
+
+@pytest.fixture
+def right_triple_fork(request, ksize, length, right_fork, random_sequence,
+                      consume_collector, check_fp_collector):
     '''
     Sets up a graph structure like so:
 
@@ -279,7 +226,7 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
     Where S is the start position of the high degreen node (HDN).
     '''
     
-    def get():
+    def _right_triple_fork():
         (core_sequence, top_branch), S = right_fork()
         bottom_branch = random_sequence()[:length-S-ksize]
 
@@ -291,27 +238,19 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence):
 
         bottom_branch = top_branch[:ksize - 1] + mutated + bottom_branch
 
+        consume_collector(core_sequence, bottom_branch, top_branch)
+        check_fp_collector((lambda G: count_decision_nodes(core_sequence, G, ksize),
+                             {(1,3): 1}),
+                            (lambda G: count_decision_nodes(bottom_branch, G, ksize),
+                             {}))
         
-        conditional_consume(request, core_sequence, bottom_branch, top_branch)
-        graph = conditional_check_fp(request, core_sequence, bottom_branch, top_branch)
-        if graph:
-            core_decision_nodes = count_decision_nodes(core_sequence,
-                                                       graph,
-                                                       ksize)
-
-            if not (core_decision_nodes == {(1,3): 1}) or \
-                   count_decision_nodes(bottom_branch, graph, ksize):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
-
         return (core_sequence, top_branch, bottom_branch), S 
 
-    return get
+    return _right_triple_fork
 
 
 @pytest.fixture
-def snp_bubble(request, ksize, linear_path):
+def snp_bubble(request, ksize, linear_path, consume_collector, check_fp_collector):
     '''
     Sets up a graph structure resulting from a SNP (Single Nucleotide
     Polymorphism).
@@ -335,7 +274,7 @@ def snp_bubble(request, ksize, linear_path):
     so we bring the rightmost SNP a tad left.
     '''
 
-    def get():
+    def _snp_bubble():
         wildtype_sequence = linear_path()
         HDN_L = (len(wildtype_sequence) // 2) - ksize
         HDN_R = HDN_L + ksize + 1
@@ -345,31 +284,22 @@ def snp_bubble(request, ksize, linear_path):
 
         snp_sequence = mutate_position(wildtype_sequence, HDN_L + ksize)
 
-        conditional_consume(request, wildtype_sequence, snp_sequence)
-        graph = conditional_check_fp(request, wildtype_sequence, snp_sequence)
-        if graph:
-            wildtype_decision_nodes = count_decision_nodes(wildtype_sequence,
-                                                           graph,
-                                                           ksize)
-            snp_decision_nodes = count_decision_nodes(snp_sequence,
-                                                      graph,
-                                                      ksize)
-            if not (snp_decision_nodes == \
-                    wildtype_decision_nodes == \
-                    {(1,2): 1, (2,1):1}):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(wildtype_sequence, snp_sequence)
+        check_fp_collector((lambda G: count_decision_nodes(wildtype_sequence, G, ksize),
+                             {(1,2): 1, (2,1):1}),
+                            (lambda G: count_decision_nodes(snp_sequence, G, ksize),
+                             {(1,2): 1, (2,1):1}))
 
         return (wildtype_sequence, snp_sequence), HDN_L, HDN_R
 
-    return get
+    return _snp_bubble
 
 
 @pytest.fixture
-def tandem_quad_forks(request, ksize, length, linear_path, random_sequence):
+def tandem_quad_forks(request, ksize, length, linear_path, random_sequence,
+                      consume_collector, check_fp_collector):
 
-    def get():
+    def _tandem_quad_forks():
         core = linear_path()
         S_l = (len(core) // 2) - ksize
         S_r = S_l + 1
@@ -381,78 +311,58 @@ def tandem_quad_forks(request, ksize, length, linear_path, random_sequence):
                           for kmer in right_kmers(core[S_r:S_r+ksize]) \
                           if kmer not in core]
 
-        conditional_consume(request, core, *left_branches, *right_branches)
-        graph = conditional_check_fp(request, core, *left_branches, *right_branches)
-        if graph:
-            decision_nodes = count_decision_nodes(core, graph, ksize)
-            if not decision_nodes == {(1,4): 2}:
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(core, *left_branches, *right_branches)
+        check_fp_collector((lambda G: count_decision_nodes(core, G, ksize), {(1,4): 2}),
+                            *[(lambda G: count_decision_nodes(branch, G, ksize), {}) \
+                              for branch in left_branches + right_branches])
 
         return (core, left_branches, right_branches), S_l, S_r
     
-    return get
+    return _tandem_quad_forks
 
 
 @pytest.fixture(params=[2,6,10], ids=lambda r: 'repeats={0}'.format(r))
-def tandem_repeats_lt_ksize(request, ksize):
+def tandem_repeats_lt_ksize(request, ksize, consume_collector, check_fp_collector):
     if ksize < 4:
         raise ValueError('Must use ksize >= 4')
 
-    def get():
+    def _tandem_repeats_lt_ksize():
         repeat = _get_random_sequence(ksize - 2)
         tandem_repeats = repeat * request.param
 
-        conditional_consume(request, tandem_repeats)
-        graph = conditional_check_fp(request, tandem_repeats)
-        if graph:
-            if count_decision_nodes(tandem_repeats, graph, ksize):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
-
+        consume_collector(tandem_repeats)
+        check_fp_collector((lambda G: count_decision_nodes(tandem_repeats, G, ksize), {}))
 
         return (repeat, tandem_repeats), request.param
 
-    return get
+    return _tandem_repeats_lt_ksize
 
 
 @pytest.fixture(params=[2,6,10], ids=lambda r: 'repeats={0}'.format(r))
-def tandem_repeats_gt_ksize(request, ksize):
+def tandem_repeats_gt_ksize(request, ksize, consume_collector, check_fp_collector):
 
-    def get():
+    def _tandem_repeats_gt_ksize():
         repeat = _get_random_sequence(ksize * 2)
         tandem_repeats = repeat * request.param
 
-        conditional_consume(request, tandem_repeats)
-        graph = conditional_check_fp(request, tandem_repeats)
-        if graph:
-            if count_decision_nodes(tandem_repeats, graph, ksize):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(tandem_repeats)
+        check_fp_collector((lambda G: count_decision_nodes(tandem_repeats, G, ksize), {}))
 
         return (repeat, tandem_repeats), request.param
 
-    return get
+    return _tandem_repeats_gt_ksize
 
 
 @pytest.fixture
-def circular(request, linear_path):
+def circular(request, linear_path, consume_collector, check_fp_collector):
 
-    def get():
+    def _circular():
         sequence = linear_path()
         sequence += sequence
 
-        conditional_consume(request, sequence)
-        graph = conditional_check_fp(request, sequence)
-        if graph:
-            if count_decision_nodes(sequence, graph, ksize):
-                check_fp_xfail(request)
-            else:
-                check_fp_pass(request)
+        consume_collector(sequence)
+        check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {}))
 
         return sequence
 
-    return get
+    return _circular
