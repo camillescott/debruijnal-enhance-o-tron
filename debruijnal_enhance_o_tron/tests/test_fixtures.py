@@ -147,3 +147,10 @@ def test_circular(circular, ksize, length):
     sequence = circular()
     assert len(sequence) == 2 * length
 
+def test_left_hairpin(left_hairpin, ksize, length):
+    sequence, pos = left_hairpin()
+    assert len(sequence) == length + ksize
+    assert sequence[pos:pos+ksize] == sequence[-ksize:]
+
+
+

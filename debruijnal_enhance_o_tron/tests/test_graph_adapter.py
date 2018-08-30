@@ -176,6 +176,16 @@ def test_snp_bubble_consume(snp_bubble, graph, ksize, length, consume):
         assert graph.get(kmer)
 
 
+def test_left_hairpin_consume(left_hairpin, graph, ksize, length, consume):
+    sequence, pos = left_hairpin()
+    consume()
+
+    for kmer in kmers(sequence, ksize):
+        assert graph.get(kmer)
+
+    assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(2,1): 2}
+
+
 def test_tandem_quad_forks(tandem_quad_forks, graph, ksize, length, consume):
     (core, left_branches, right_branches), S_l, S_r = tandem_quad_forks()
     consume()

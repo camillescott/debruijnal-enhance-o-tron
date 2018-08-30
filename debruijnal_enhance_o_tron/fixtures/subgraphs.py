@@ -315,6 +315,26 @@ def snp_bubble(request, ksize, linear_path, consume_collector, check_fp_collecto
 
 
 @pytest.fixture
+def left_hairpin(request, ksize, linear_path, consume_collector, check_fp_collector):
+    '''
+    Sets up a left hairpin graph structure with HDN at pos.
+    '''
+
+    def _left_hairpin():
+        core = linear_path()
+        pos = len(core) // 2
+        hdn = core[pos:pos+ksize]
+        result = core + hdn
+
+        consume_collector(result)
+        check_fp_collector((lambda G: count_decision_nodes(result, G, ksize), {(2,1) : 2}))
+
+        return result, pos
+
+    return _left_hairpin
+
+
+@pytest.fixture
 def tandem_quad_forks(request, ksize, length, linear_path, random_sequence,
                       consume_collector, check_fp_collector):
 
