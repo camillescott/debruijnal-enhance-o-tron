@@ -214,6 +214,22 @@ def test_tandem_quad_forks(tandem_quad_forks, graph, ksize, length, consume):
     assert graph.right_degree(core[S_r:S_r+ksize]) == 4
 
 
+def test_hourglass_tangle(hourglass_tangle, graph, ksize, length, consume):
+    (top, bottom), L = hourglass_tangle()
+    assert len(bottom) == len(top)
+    consume()
+
+    for kmer in chain(kmers(top, ksize), kmers(bottom, ksize)):
+        assert graph.get(kmer)
+
+    assert subgraphs.count_decision_nodes(top, graph, ksize) == {(1,2): 1, (2,1): 1}
+    assert subgraphs.count_decision_nodes(bottom, graph, ksize) == {(1,2): 1, (2,1): 1}
+    assert graph.left_degree(top[L:L+ksize]) == 1
+    assert graph.right_degree(top[L:L+ksize]) == 2
+    assert graph.left_degree(bottom[L:L+ksize]) == 1
+    assert graph.right_degree(bottom[L:L+ksize]) == 2
+
+
 def test_tandem_repeat_lt_ksize_noconsume(tandem_repeats_lt_ksize,
                                           ksize,
                                           graph):

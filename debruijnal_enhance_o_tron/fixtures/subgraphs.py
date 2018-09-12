@@ -51,6 +51,7 @@ def count_decision_nodes(sequence, graph, ksize):
         ld, rd = d
         if ld > 1 or rd > 1:
             dnodes[d] = dnodes.get(d, 0) + 1
+            print(i, d)
 
     return dnodes
 
@@ -336,6 +337,32 @@ def snp_bubble(request, ksize, linear_path, consume_collector, check_fp_collecto
         return (wildtype_sequence, snp_sequence), HDN_L, HDN_R
 
     return _snp_bubble
+
+
+@pytest.fixture
+def hourglass_tangle(request, ksize, length, linear_path, random_sequence,
+                     consume_collector, check_fp_collector):
+
+    def _hourglass_tangle():
+        top = linear_path()
+        L = (len(top) // 2) - ksize
+        decision_segment = top[L:L+ksize+1]
+        decision_segment = mutate_position(decision_segment, 0)
+        decision_segment = mutate_position(decision_segment, -1)
+
+        bottom = random_sequence(exclude=decision_segment)[:L] \
+                 + decision_segment
+        bottom += random_sequence(exclude=bottom)[:length-L-len(decision_segment)]
+
+        consume_collector(top, bottom)
+        check_fp_collector((lambda G: count_decision_nodes(top, G, ksize),
+                            {(1,2): 1, (2,1): 1}),
+                           (lambda G: count_decision_nodes(bottom, G, ksize),
+                            {(1,2): 1, (2,1): 1}))
+
+        return (top, bottom), L
+
+    return _hourglass_tangle
 
 
 @pytest.fixture
