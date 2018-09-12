@@ -108,18 +108,14 @@ def right_sea(request, ksize, random_sequence, consume_collector, check_fp_colle
         bottom = ''.join(bottom)
 
         consume_collector(top, bottom)
-        check_fp_collector((lambda G : count_decision_nodes(core,
-                                                             G,
-                                                             ksize),
-                             {(0,2): 1}),
-                            (lambda G: count_decision_nodes(top,
+        check_fp_collector((lambda G : count_decision_nodes(top,
                                                             G,
                                                             ksize),
-                             {}),
+                             {(0,2): 1}),
                             (lambda G: count_decision_nodes(bottom,
                                                             G,
                                                             ksize),
-                             {}))
+                             {(0,2): 1}))
 
         return top, bottom
 
@@ -140,18 +136,14 @@ def left_sea(request, ksize, random_sequence, consume_collector, check_fp_collec
         bottom = ''.join(bottom)
 
         consume_collector(top, bottom)
-        check_fp_collector((lambda G : count_decision_nodes(core,
-                                                             G,
-                                                             ksize),
-                             {(2,0): 1}),
-                            (lambda G: count_decision_nodes(top,
+        check_fp_collector((lambda G : count_decision_nodes(top,
                                                             G,
                                                             ksize),
-                             {}),
+                             {(2,0): 1}),
                             (lambda G: count_decision_nodes(bottom,
                                                             G,
                                                             ksize),
-                             {}))
+                             {(2,0): 1}))
 
         return top, bottom
 
