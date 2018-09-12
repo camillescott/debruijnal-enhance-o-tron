@@ -183,6 +183,7 @@ def test_left_hairpin_consume(left_hairpin, graph, ksize, length, consume):
     for kmer in kmers(sequence, ksize):
         assert graph.get(kmer)
 
+    print(sequence, pos)
     assert subgraphs.count_decision_nodes(sequence, graph, ksize) == {(2,1): 2}
 
 

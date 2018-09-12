@@ -46,10 +46,11 @@ def count_decision_nodes(sequence, graph, ksize):
     '''
 
     dnodes = {}
-    for kmer in kmers(sequence, ksize):
+    for i, kmer in enumerate(kmers(sequence, ksize)):
         d = (graph.left_degree(kmer), graph.right_degree(kmer))
         ld, rd = d
         if ld > 1 or rd > 1:
+            print(i, d)
             dnodes[d] = dnodes.get(d, 0) + 1
 
     return dnodes
@@ -140,7 +141,7 @@ def right_tip(request, ksize, random_sequence, consume_collector, check_fp_colle
     L:   S-1:S-1+K
     R:   S+1:S+1+K
 
-    The mutated base itself is at S+K
+    The mutated base B is at S+K
     '''
     def _right_tip():
         sequence = random_sequence()
@@ -323,10 +324,16 @@ def left_hairpin(request, ksize, linear_path, consume_collector, check_fp_collec
     def _left_hairpin():
         core = linear_path()
         pos = len(core) // 2
+        if core[pos - 1] == core[-1]:
+            core = mutate_position(core, -1)
         hdn = core[pos:pos+ksize]
         result = core + hdn
 
+        _collector = consume_collector()
+        _collector.pop()
         consume_collector(result)
+        _check_fp_collector = check_fp_collector()
+        _check_fp_collector.pop()
         check_fp_collector((lambda G: count_decision_nodes(result, G, ksize), {(2,1) : 2}))
 
         return result, pos

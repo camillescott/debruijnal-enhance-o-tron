@@ -51,6 +51,15 @@ def consume(request, consume_collector, graph):
     
     return _consume
 
+
+def check_fp_xfail(request):
+    pytest.xfail('False-positive check FAILED ({}).'.format(request.fixturename))
+
+
+def check_fp_pass(request):
+    print('False-positive check PASS ({}).'.format(request.fixturename))
+
+
 @pytest.fixture
 def check_fp_collector(request):
     check_collector = Collector()
@@ -63,14 +72,6 @@ def check_fp_collector(request):
         return check_collector
 
     return add
-
-
-def check_fp_xfail(request):
-    pytest.xfail('False-positive check FAILED ({}).'.format(request.fixturename))
-
-
-def check_fp_pass(request):
-    print('False-positive check PASS ({}).'.format(request.fixturename))
 
 
 @pytest.fixture
