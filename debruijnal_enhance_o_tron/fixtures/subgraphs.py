@@ -127,6 +127,38 @@ def right_sea(request, ksize, random_sequence, consume_collector, check_fp_colle
 
 
 @pytest.fixture
+def left_sea(request, ksize, random_sequence, consume_collector, check_fp_collector):
+
+    def _left_sea():
+        top = random_sequence()
+        bottom = random_sequence()
+        hdn = random_sequence(length=ksize)
+        top = top + hdn
+        bottom = list(bottom + hdn)
+        # make sure the HDN really is the HDN...
+        bottom[-(ksize + 1)] = mutate_base(top[-(ksize+1)])
+        bottom = ''.join(bottom)
+
+        consume_collector(top, bottom)
+        check_fp_collector((lambda G : count_decision_nodes(core,
+                                                             G,
+                                                             ksize),
+                             {(2,0): 1}),
+                            (lambda G: count_decision_nodes(top,
+                                                            G,
+                                                            ksize),
+                             {}),
+                            (lambda G: count_decision_nodes(bottom,
+                                                            G,
+                                                            ksize),
+                             {}))
+
+        return top, bottom
+
+    return _left_sea
+
+
+@pytest.fixture
 def right_tip(request, ksize, random_sequence, consume_collector, check_fp_collector):
     '''
     Sets up a graph structure like so:

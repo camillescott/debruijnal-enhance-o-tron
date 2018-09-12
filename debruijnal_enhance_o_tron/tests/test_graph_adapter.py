@@ -82,6 +82,17 @@ def test_right_sea_consume(right_sea, graph, ksize, length, consume):
         assert graph.get(kmer)
 
 
+def test_left_sea_consume(left_sea, graph, ksize, length, consume):
+    top, bottom = left_sea()
+    consume()
+
+    assert subgraphs.count_decision_nodes(top, graph, ksize) == {(2, 0): 1}
+
+    for kmer in chain(kmers(top, ksize),
+                      kmers(bottom, ksize)):
+        assert graph.get(kmer)
+
+
 def test_right_tip_noconsume(right_tip, graph, ksize, length):
     (sequence, tip), S = right_tip()
 
