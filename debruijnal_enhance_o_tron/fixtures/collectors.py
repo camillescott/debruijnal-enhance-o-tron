@@ -45,19 +45,20 @@ def consume(request, consume_collector, graph):
     seq_collector = consume_collector()
    
     def _consume():
-        print(seq_collector.items)
         for sequence in seq_collector.values():
             graph.add(sequence)
     
     return _consume
 
 
-def check_fp_xfail(request):
-    pytest.xfail('False-positive check FAILED ({}).'.format(request.fixturename))
+def check_fp_xfail(reason, request):
+    pytest.xfail('[False-positive check FAILED ({}, fixture {})]'.format(reason,
+                                                                        request.fixturename),
+                 end=' ')
 
 
-def check_fp_pass(request):
-    print('False-positive check PASS ({}).'.format(request.fixturename))
+def check_fp_pass(srcs):
+    print('[False-positive check PASS ({})]'.format(', '.join(srcs)), end=' ')
 
 
 @pytest.fixture
@@ -85,15 +86,19 @@ def check_fp(request, check_fp_collector, consume_collector, graph, ksize):
         for sequence in sequences.values():
             for kmer in kmers(sequence, ksize):
                 if _graph.get(kmer):
-                    check_fp_xfail(request)
+                    print(sequences.items)
+                    check_fp_xfail('k-mer from a sequence is false-positive', request)
         
-        for sequence in sequences.values():
-            _graph.add(sequence)
+        for src_fixture, sequence_bundle in sequences.items.items():
+            for sequence in sequence_bundle:
+                _graph.add(sequence)
 
-        results = [func(_graph) == result for func, result in funcs.values()]
-        if not all(results):
-            check_fp_xfail(request)
-        else:
-            check_fp_pass(request)
+            fp_funcs = funcs.items[src_fixture]
+            for func, result in fp_funcs:
+                if func(_graph) != result:
+                    print(sequences.items)
+                    check_fp_xfail('neighbor is false-positive from {}'.format(src_fixture), request)
+
+        check_fp_pass(list(funcs.items.keys()))
     
     return _check_fp

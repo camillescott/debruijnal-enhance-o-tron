@@ -175,11 +175,14 @@ def test_snp_bubble_noconsume(snp_bubble, graph, ksize, length):
         assert not graph.get(kmer)
 
 
-def test_snp_bubble_consume(snp_bubble, graph, ksize, length, consume):
+def test_snp_bubble_consume(snp_bubble, graph, ksize, length, consume, check_fp):
     (wildtype, snp), L, R = snp_bubble()
     consume()
+    check_fp()
 
     assert subgraphs.count_decision_nodes(wildtype, graph, ksize) \
+            == {(1,2): 1, (2,1):1}
+    assert subgraphs.count_decision_nodes(snp, graph, ksize) \
             == {(1,2): 1, (2,1):1}
 
     for kmer in chain(kmers(wildtype, ksize),
