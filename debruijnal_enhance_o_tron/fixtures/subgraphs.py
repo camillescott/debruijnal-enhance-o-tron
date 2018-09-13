@@ -366,6 +366,32 @@ def hourglass_tangle(request, ksize, length, linear_path, random_sequence,
 
 
 @pytest.fixture
+def bowtie_tangle(request, ksize, length, linear_path, random_sequence,
+                  consume_collector, check_fp_collector):
+
+    def _bowtie_tangle():
+        top = linear_path()
+        L = (len(top) // 2) - ksize
+        decision_segment = top[L:L+ksize+2]
+        decision_segment = mutate_position(decision_segment, 0)
+        decision_segment = mutate_position(decision_segment, -1)
+
+        bottom = random_sequence(exclude=decision_segment)[:L] \
+                 + decision_segment
+        bottom += random_sequence(exclude=bottom)[:length-L-len(decision_segment)]
+
+        consume_collector(top, bottom)
+        check_fp_collector((lambda G: count_decision_nodes(top, G, ksize),
+                            {(2,2): 1}),
+                           (lambda G: count_decision_nodes(bottom, G, ksize),
+                            {(2,2): 1}))
+
+        return (top, bottom), L
+
+    return _bowtie_tangle
+
+
+@pytest.fixture
 def left_hairpin(request, ksize, linear_path, consume_collector, check_fp_collector):
     '''
     Sets up a left hairpin graph structure with HDN at pos.
