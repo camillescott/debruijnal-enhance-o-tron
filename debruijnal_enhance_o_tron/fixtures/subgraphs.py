@@ -476,7 +476,7 @@ def tandem_repeats_gt_ksize(request, ksize, consume_collector, check_fp_collecto
 
 
 @pytest.fixture
-def circular(request, linear_path, consume_collector, check_fp_collector):
+def circular(request, ksize, linear_path, consume_collector, check_fp_collector):
 
     def _circular():
         sequence = linear_path()
