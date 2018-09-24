@@ -488,3 +488,22 @@ def circular(request, ksize, linear_path, consume_collector, check_fp_collector)
         return sequence
 
     return _circular
+
+
+@pytest.fixture
+def circular_key(request, ksize, length, linear_path, consume_collector, check_fp_collector):
+
+    def _circular_key():
+        loop = linear_path()
+        loop = loop + loop[:ksize-1]
+
+        pos = length // 2
+        tail = loop[pos+1:pos+1+ksize]
+        tail = mutate_position(tail, -1)
+        
+        consume_collector(loop, tail)
+        check_fp_collector((lambda G: count_decision_nodes(loop, G, ksize), {(1,2) : 1}))
+
+        return (loop, tail), pos
+
+    return _circular_key

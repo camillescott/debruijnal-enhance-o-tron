@@ -244,6 +244,14 @@ def test_bowtie_tangle(bowtie_tangle, graph, ksize, length, consume):
     assert graph.right_degree(top[L+1:L+1+ksize]) == 2
 
 
+def test_circular_key(circular_key, graph, ksize, length, consume, check_fp):
+    (loop, tail), pos = circular_key()
+    consume()
+
+    assert graph.left_degree(loop[pos:pos+ksize]) == 1
+    assert graph.right_degree(loop[pos:pos+ksize]) == 2
+
+
 def test_tandem_repeat_lt_ksize_noconsume(tandem_repeats_lt_ksize,
                                           ksize,
                                           graph):
