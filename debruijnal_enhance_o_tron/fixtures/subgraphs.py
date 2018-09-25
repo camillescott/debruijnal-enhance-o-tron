@@ -489,6 +489,20 @@ def circular(request, ksize, linear_path, consume_collector, check_fp_collector)
 
     return _circular
 
+@pytest.fixture
+def suffix_circular(request, ksize, linear_path, consume_collector, check_fp_collector):
+
+    def _suffix_circular():
+        sequence = linear_path()
+        sequence += sequence[:ksize-1]
+
+        consume_collector(sequence)
+        check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {}))
+
+        return sequence
+
+    return _suffix_circular
+
 
 @pytest.fixture
 def circular_key(request, ksize, length, linear_path, consume_collector, check_fp_collector):
