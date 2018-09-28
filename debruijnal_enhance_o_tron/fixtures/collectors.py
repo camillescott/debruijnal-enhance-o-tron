@@ -52,9 +52,8 @@ def consume(request, consume_collector, graph):
 
 
 def check_fp_xfail(reason, request):
-    pytest.xfail('[False-positive check FAILED ({}, fixture {})]'.format(reason,
-                                                                        request.fixturename),
-                 end=' ')
+    pytest.xfail('[False-positive check FAILED ({}, fixture {})]  '.format(reason,
+                                                                        request.fixturename))
 
 
 def check_fp_pass(srcs):
