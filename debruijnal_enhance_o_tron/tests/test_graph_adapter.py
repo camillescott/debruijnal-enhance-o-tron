@@ -230,6 +230,25 @@ def test_hourglass_tangle(hourglass_tangle, graph, ksize, length, consume):
     assert graph.right_degree(bottom[L:L+ksize]) == 2
 
 
+@using_ksize(5)
+@using_length(25)
+def test_triple_chain_tangle(triple_chain_tangle, graph, ksize, length, consume):
+    (top, bottom), L = triple_chain_tangle()
+    print(L, top, L * ' ' + '|', bottom, sep='\n')
+    assert len(bottom) == len(top)
+    consume()
+
+    for kmer in chain(kmers(top, ksize), kmers(bottom, ksize)):
+        assert graph.get(kmer)
+
+    assert subgraphs.count_decision_nodes(top, graph, ksize) == {(1,2): 2, (2,1): 1}
+    assert subgraphs.count_decision_nodes(bottom, graph, ksize) == {(1,2): 1, (2,1): 2}
+    assert graph.left_degree(top[L:L+ksize]) == 1
+    assert graph.right_degree(top[L:L+ksize]) == 2
+    assert graph.left_degree(bottom[L:L+ksize]) == 1
+    assert graph.right_degree(bottom[L:L+ksize]) == 2
+
+
 def test_bowtie_tangle(bowtie_tangle, graph, ksize, length, consume):
     (top, bottom), L = bowtie_tangle()
     assert len(bottom) == len(top)

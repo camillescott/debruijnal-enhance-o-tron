@@ -57,6 +57,85 @@ def using_length(L):
     return wrapped
 
 
+def get_internal_pivot(pivot_var, length, ksize):
+    if pivot_var == 'flank_left':
+        return 1
+    elif pivot_var == 'middle':
+        return length // 2
+    elif pivot_var == 'flank_right':
+        return length - ksize - 1
+    else:
+        raise ValueError("Invalid pivot")
+
+
+def get_end_pivot(pivot_var, length, ksize):
+    if pivot_var == 'left':
+        return 0
+    elif pivot_var == 'right':
+        return length - ksize
+    else:
+        raise ValueError("Invalid pivot")
+
+
+@pytest.fixture(params=['left', 'right'], ids=lambda l: 'pivot={0}'.format(l))
+def end_pivot(request, length, ksize):
+    try:
+        return get_end_pivot(request.param, length, ksize)
+    except ValueError:
+        return request.param
+
+
+@pytest.fixture(params=['flank_left', 'middle', 'flank_right'],
+                ids=lambda l: 'pivot={0}'.format(l))
+def internal_pivot(request, length, ksize):
+    try:
+        return get_internal_pivot(request.param, length, ksize)
+    except ValueError:
+        return request.param
+
+
+@pytest.fixture(params=['middle'], ids=lambda l: 'pivot={0}'.format(l))
+def middle_pivot(request, length, ksize):
+    try:
+        return get_internal_pivot(request.param, length, ksize)
+    except ValueError:
+        return request.param
+
+
+@pytest.fixture(params=['left', 'flank_left', 'middle', 'flank_right', 'right'],
+                ids=lambda l: 'pivot={0}'.format(l))
+def pivot(request, length, ksize):
+    try:
+        return get_internal_pivot(request.param, length, ksize)
+    except ValueError:
+        pass
+
+    try:
+        return get_end_pivot(request.param, length, ksize)
+    except ValueError:
+        return request.param
+
+
+def using_pivot(P):
+    '''
+    Convenience wrapper for basic length fixure.
+    '''
+
+    def wrapped(fixture_func):
+        try:
+            _ = iter(P)
+        except:
+            piv = [P]
+        else:
+            piv = P
+
+        return pytest.mark.parametrize('pivot', 
+                                       piv,
+                                       indirect=['pivot'],
+                                       ids=lambda l: 'pivot={0}'.format(l))(fixture_func)
+    return wrapped
+
+
 @pytest.fixture
 def random_sequence(request, ksize, length):
     global_seen = set()

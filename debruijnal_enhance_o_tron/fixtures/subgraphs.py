@@ -12,6 +12,7 @@ from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 right_kmers,
                                                 revcomp)
 from debruijnal_enhance_o_tron.fixtures.collectors import (consume_collector, check_fp_collector)
+from debruijnal_enhance_o_tron.fixtures.sequence import using_pivot
 
 
 class GraphAdapter(object):
@@ -151,88 +152,93 @@ def left_sea(request, ksize, random_sequence, consume_collector, check_fp_collec
 
 
 @pytest.fixture
-def right_tip(request, ksize, random_sequence, consume_collector, check_fp_collector):
+def right_tip(request, ksize, internal_pivot, random_sequence,
+              consume_collector, check_fp_collector):
     '''
     Sets up a graph structure like so:
-                                 ([S+1:S+K]+B tip)
-    sequence                   ↗
-    [0]→o→o~~o→(L)→([S:S+K] HDN)→(R)→o→o→o~~o→[-1]
 
-    Where S is the start position of the high degreen node (HDN).
-    That is, it has a single branch at the Sth K-mer.
+                                    ([pivot+1:] tip)
+        sequence                   ↗
+        [0]→o→o~~o→(L)→([pivot:pivot+K] decision)→(R)→o→o→o~~o→[-1]
 
-    HDN: S:S+K
-    L:   S-1:S-1+K
-    R:   S+1:S+1+K
+    Where pivot is the start position of the decision k-mer:
+    pivot:pivot+K has right-degree of two.
 
-    The mutated base B is at S+K
+    The mutated base is at S+K
     '''
     def _right_tip():
         sequence = random_sequence()
-        S = (len(sequence) // 2) - (ksize // 2)
-        # right of the HDN
-        R = S + 1
+        pivot = internal_pivot
 
-        if S < 1:
+        if pivot < 1:
             raise ValueError("ksize too large for length")
 
         # the branch kmer
-        tip = mutate_position(sequence[R:R+ksize], -1)
+        tip = mutate_position(sequence[pivot+1:pivot+1+ksize], -1)
 
         consume_collector(sequence, tip)
         check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {(1,2): 1}),
                             (lambda G: count_decision_nodes(tip, G, ksize), {}))
 
-        return (sequence, tip), S
+        return (sequence, tip), pivot
 
     return _right_tip
 
 
 @pytest.fixture
-def right_fork(request, ksize, length, right_tip, random_sequence,
+def right_fork(request, ksize, length, 
+               right_tip, random_sequence,
                consume_collector, check_fp_collector):
     '''
     Sets up a graph structure like so:
-                                               branch
-                                 ([S+1:S+K]+B)→o~~o→o
-    core_sequence               ↗
-    [0]→o→o~~o→(L)→([S:S+K] HDN)→(R)→o→o→o~~o→[-1]
 
-    Where S is the start position of the high degreen node (HDN)
-    and B is the mutated base starting the branch.
+                                                   branch
+                                     ([pivot+1:])→o~~o→o
+        core_sequence               ↗
+        [0]→o→o~~o→(L)→([pivot:pivot+K] decision)→(R)→o→o→o~~o→[-1]
+
+    Where pivot is the start position of the decision k-mer:
+    pivot:pivot+K has right-degree of two.
 
     This is a tip with a longer fork length.
     '''
 
     def _right_fork():
-        (core_sequence, tip), S = right_tip()
+        (core_sequence, tip), pivot = right_tip()
         branch_sequence = random_sequence()
 
-        branch_sequence = tip + random_sequence()[:length-S-ksize]
+        branch_sequence = tip + random_sequence()[:length-pivot-ksize]
 
         consume_collector(core_sequence, branch_sequence)
         check_fp_collector((lambda G: count_decision_nodes(core_sequence,
-                                                            G,
-                                                            ksize),
-                             {(1,2): 1}),
-                            (lambda G: count_decision_nodes(branch_sequence,
-                                                            G,
-                                                            ksize),
-                             {}))
+                                                           G,
+                                                           ksize),
+                            {(1,2): 1}),
+                           (lambda G: count_decision_nodes(branch_sequence,
+                                                           G,
+                                                           ksize),
+                            {}))
 
-        return (core_sequence, branch_sequence), S
+        return (core_sequence, branch_sequence), pivot
 
     return _right_fork
 
 
 @pytest.fixture
-def left_fork(request, ksize, length, right_fork, consume_collector, check_fp_collector):
+def left_fork(request, ksize, length, right_fork,
+              consume_collector, check_fp_collector):
+    '''
+    The opposite of a right-fork: pivot:pivot+K has left-degree of two;
+    the mutated base in the core sequence is at pivot-1.
+
+    This is a tip with a longer fork length.
+    '''
 
     def _left_fork():
-        (core_sequence, branch), pos = right_fork()
+        (core_sequence, branch), pivot = right_fork()
         core_sequence = revcomp(core_sequence)
         branch = revcomp(branch)
-        pos = length - pos - ksize
+        pivot = length - pivot - ksize
         
         _collector = consume_collector()
         _collector.pop() # remove previous two fixtures that compose right_fork
@@ -247,7 +253,7 @@ def left_fork(request, ksize, length, right_fork, consume_collector, check_fp_co
                             {(2,1): 1}),
                            (lambda G: count_decision_nodes(branch, G, ksize), {}))
 
-        return (core_sequence, branch), pos
+        return (core_sequence, branch), pivot
 
     return _left_fork
         
@@ -259,25 +265,25 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence,
     '''
     Sets up a graph structure like so:
 
-                                       top_branch
-                                ([:S+1]+B)→o~~o→o
-    core_sequence              ↗
-    [0]→o→o~~o→(L)→([S:S+K] HDN)→(R)→o→o→o~~o→[-1]
-                               ↘
-                                ([:S+1]+B)→o~~o→o
-                                     bottom_branch
+                                           top_branch
+                                    ([pivot+1:])→o~~o→o
+        core_sequence              ↗
+        [0]→o→o~~o→(L)→([pivot:pivot+K] decision)→(R)→o→o→o~~o→[-1]
+                                   ↘
+                                    ([pivot+1:]+)→o~~o→o
+                                         bottom_branch
 
     Where S is the start position of the high degreen node (HDN).
     '''
     
     def _right_triple_fork():
-        (core_sequence, top_branch), S = right_fork()
-        bottom_branch = random_sequence()[:length-S-ksize]
+        (core_sequence, top_branch), pivot = right_fork()
+        bottom_branch = random_sequence()[:length-pivot-ksize]
 
         # the branch sequence, mutated at position S+1
         # choose a base not already represented at that position
         bases = {'A', 'C', 'G', 'T'}
-        used = {core_sequence[S+ksize], top_branch[ksize-1]}
+        used = {core_sequence[pivot+ksize], top_branch[ksize-1]}
         mutated = random.choice(list(bases - used))
 
         bottom_branch = top_branch[:ksize - 1] + mutated + bottom_branch
@@ -288,45 +294,45 @@ def right_triple_fork(request, ksize, length, right_fork, random_sequence,
                             (lambda G: count_decision_nodes(bottom_branch, G, ksize),
                              {}))
         
-        return (core_sequence, top_branch, bottom_branch), S 
+        return (core_sequence, top_branch, bottom_branch), pivot 
 
     return _right_triple_fork
 
 
 @pytest.fixture
-def snp_bubble(request, ksize, linear_path, consume_collector, check_fp_collector):
+def snp_bubble(request, ksize, linear_path, middle_pivot,
+               consume_collector, check_fp_collector):
     '''
     Sets up a graph structure resulting from a SNP (Single Nucleotide
     Polymorphism).
 
-                (HDN_L[1:]+SNP)→o~~o→(SNP+)
-              ↗                           ↘
-    o~~(HDN_L)                             (HDN_R)~~o
-              ↘                           ↗
-                (HDN_L[1:]+W)→o~~o~~o→(W+)
+                        (SNP_L[1:]+SNP)→o~~o→(SNP+)
+                      ↗                            ↘
+        o~~(decision_L)                             (decision_R)~~o
+                      ↘                            ↗
+                        (SNP_L[1:]+W)→o~~o~~o→(W+)
 
+    Returns two equal-length sequences, with a mutation at position
+    pivot+K in the second sequence.
 
-    HDN_L: S:S+K
-    HDN_R: S+K+1:S+2K+1
+    decision_L is pivot:pivot+K in both sequences.
+    decision_R is pivot+K+1:pivot+2K+1 in both sequences
 
-    Where S is the start position of HDN directly left of the SNP (HDN_L),
     SNP is the mutated base, and W is the wildtype (original) base.
     Of course, W and SNP could be interchanged here, we don't actually
     know which is which ;)
 
-    Note our parametrization: we need a bit more room from the ends,
-    so we bring the rightmost SNP a tad left.
     '''
 
     def _snp_bubble():
         wildtype_sequence = linear_path()
-        HDN_L = (len(wildtype_sequence) // 2) - ksize
-        HDN_R = HDN_L + ksize + 1
+        decision_L = middle_pivot
+        decision_R = decision_L + ksize + 1
 
-        if HDN_L < 1:
+        if decision_L < 1:
             raise ValueError("ksize too long for length")
 
-        snp_sequence = mutate_position(wildtype_sequence, HDN_L + ksize)
+        snp_sequence = mutate_position(wildtype_sequence, decision_L + ksize)
 
         consume_collector(wildtype_sequence, snp_sequence)
         check_fp_collector((lambda G: count_decision_nodes(wildtype_sequence, G, ksize),
@@ -334,18 +340,37 @@ def snp_bubble(request, ksize, linear_path, consume_collector, check_fp_collecto
                             (lambda G: count_decision_nodes(snp_sequence, G, ksize),
                              {(1,2): 1, (2,1): 1}))
 
-        return (wildtype_sequence, snp_sequence), HDN_L, HDN_R
+        return (wildtype_sequence, snp_sequence), decision_L, decision_R
 
     return _snp_bubble
 
 
 @pytest.fixture
-def hourglass_tangle(request, ksize, length, linear_path, random_sequence,
+def hourglass_tangle(request, ksize, length, middle_pivot,
+                     linear_path, random_sequence,
                      consume_collector, check_fp_collector):
+    '''
+    The hourglass tangle consists of two sequences, the "top" and "bottom,"
+    and has four decision k-mers: two in the top, neighboring each other,
+    and two in the bottom, neighboring each other as well, with the left decision
+    of the bottom sharing the right decision of the top as a neighbor,
+    and the right decision of the bottom having the left decision of the top as
+    a neighbor.
+
+        top                
+        [0]~~([pivot:pivot+K] L_top)→([pivot+1:pivot+1+K] R_top)~~o
+                                   ↘ ↗
+                                   ↗ ↘
+        [0]~~([pivot:pivot+K] L_bot)→([pivot+1:pivot+1+K] R_bot)~~o
+        bottom
+
+    L_top and L_bot have left-degree 1 and right-degree 2,
+    while R_top and R_bot have left-degree 2 and right-degree 1.
+    '''
 
     def _hourglass_tangle():
         top = linear_path()
-        L = (len(top) // 2) - ksize
+        L = middle_pivot
         decision_segment = top[L:L+ksize+1]
         decision_segment = mutate_position(decision_segment, 0)
         decision_segment = mutate_position(decision_segment, -1)
@@ -366,15 +391,37 @@ def hourglass_tangle(request, ksize, length, linear_path, random_sequence,
 
 
 @pytest.fixture
-def bowtie_tangle(request, ksize, length, linear_path, random_sequence,
-                  consume_collector, check_fp_collector):
+def triple_chain_tangle(request, ksize, length, middle_pivot,
+                     linear_path, random_sequence,
+                     consume_collector, check_fp_collector):
+    '''
+    The triple chain tangle consists of two sequences, the "top" and "bottom,"
+    and has six decision k-mers: three in the top, neighboring each other,
+    and three in the bottom, neighboring each other as well, with the left decision
+    of the bottom sharing the right decision of the top as a neighbor,
+    and the right decision of the bottom having the left decision of the top as
+    a neighbor.
 
-    def _bowtie_tangle():
+        top                
+        [0]~~([pivot:pivot+K] L_top)→([pivot+1:pivot+1+K] R_top)~~o
+                                   ↘ ↗
+                                   ↗ ↘
+        [0]~~([pivot:pivot+K] L_bot)→([pivot+1:pivot+1+K] R_bot)~~o
+        bottom
+
+    L_top and L_bot have left-degree 1 and right-degree 2,
+    while R_top and R_bot have left-degree 2 and right-degree 1.
+    '''
+
+    def _triple_chain_tangle():
         top = linear_path()
-        L = (len(top) // 2) - ksize
-        decision_segment = top[L:L+ksize+2]
+        L = middle_pivot
+        decision_segment = top[L:L+ksize+1]
         decision_segment = mutate_position(decision_segment, 0)
         decision_segment = mutate_position(decision_segment, -1)
+        third_dsegment = top[L+3:L+3+ksize]
+        mutate_position(third_dsegment, -1)
+        decision_segment += third_dsegment
 
         bottom = random_sequence(exclude=decision_segment)[:L] \
                  + decision_segment
@@ -382,11 +429,37 @@ def bowtie_tangle(request, ksize, length, linear_path, random_sequence,
 
         consume_collector(top, bottom)
         check_fp_collector((lambda G: count_decision_nodes(top, G, ksize),
+                            {(1,2): 2, (2,1): 1}),
+                           (lambda G: count_decision_nodes(bottom, G, ksize),
+                            {(1,2): 1, (2,1): 2}))
+
+        return (top, bottom), L
+
+    return _triple_chain_tangle
+
+
+@pytest.fixture
+def bowtie_tangle(request, ksize, length, middle_pivot,
+                  linear_path, random_sequence,
+                  consume_collector, check_fp_collector):
+
+    def _bowtie_tangle():
+        top = linear_path()
+        decision_segment = top[middle_pivot:middle_pivot+ksize+2]
+        decision_segment = mutate_position(decision_segment, 0)
+        decision_segment = mutate_position(decision_segment, -1)
+
+        bottom = random_sequence(exclude=decision_segment)[:middle_pivot] \
+                 + decision_segment
+        bottom += random_sequence(exclude=bottom)[:length-middle_pivot-len(decision_segment)]
+
+        consume_collector(top, bottom)
+        check_fp_collector((lambda G: count_decision_nodes(top, G, ksize),
                             {(2,2): 1}),
                            (lambda G: count_decision_nodes(bottom, G, ksize),
                             {(2,2): 1}))
 
-        return (top, bottom), L
+        return (top, bottom), middle_pivot
 
     return _bowtie_tangle
 
@@ -505,19 +578,51 @@ def suffix_circular(request, ksize, linear_path, consume_collector, check_fp_col
 
 
 @pytest.fixture
-def circular_key(request, ksize, length, linear_path, consume_collector, check_fp_collector):
+def suffix_circular_tangle(request, ksize, length, suffix_circular, middle_pivot,
+                           random_sequence, consume_collector, check_fp_collector):
+
+    def _suffix_circular_tangle():
+        base = suffix_circular()
+        
+        L = middle_pivot
+        decision_segment = base[L:L+ksize+1]
+        decision_segment = mutate_position(decision_segment, 0)
+        decision_segment = mutate_position(decision_segment, -1)
+
+        inducer = random_sequence(exclude=decision_segment)[:L] \
+                 + decision_segment
+        inducer += random_sequence(exclude=inducer)[:length-L-len(decision_segment)]
+
+        consume_collector(base, inducer)
+        check_fp_collector((lambda G: count_decision_nodes(base, G, ksize),
+                            {(1,2): 1, (2,1): 1}),
+                           (lambda G: count_decision_nodes(inducer, G, ksize),
+                            {(1,2): 1, (2,1): 1}))
+
+        return (base, inducer), L
+
+    return _suffix_circular_tangle
+
+@pytest.fixture
+def circular_key(request, ksize, length, pivot,
+                 linear_path, consume_collector, check_fp_collector):
 
     def _circular_key():
         loop = linear_path()
         loop = loop + loop[:ksize-1]
+        if pivot in (length - ksize, length-ksize-1):
+            _pivot = pivot + ksize - 1
+        else:
+            _pivot = pivot
 
-        pos = length // 2
-        tail = loop[pos+1:pos+1+ksize]
+        loop_kmers = list(kmers(loop, ksize))
+        tail_kmers = [loop_kmers[i % len(loop_kmers)] for i in range(_pivot+1, _pivot+1+ksize)]
+        tail = ''.join((kmer[0] for kmer in tail_kmers))
         tail = mutate_position(tail, -1)
         
         consume_collector(loop, tail)
         check_fp_collector((lambda G: count_decision_nodes(loop, G, ksize), {(1,2) : 1}))
 
-        return (loop, tail), pos
+        return (loop, tail), _pivot
 
     return _circular_key
