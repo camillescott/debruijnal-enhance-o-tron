@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# (c) Camille Scott, 2019
+# File   : test_fixtures.py
+# License: MIT
+# Author : Camille Scott <camille.scott.w@gmail.com>
+# Date   : 20.05.2019
 import pytest
 
 from debruijnal_enhance_o_tron.sequence import (mutate_base,
@@ -70,33 +77,23 @@ def test_random_sequence(random_sequence, ksize, length):
         assert kmer not in seq2
 
 
-def test_graph_adapter_noimpl(graph, ksize):
-    with pytest.raises(NotImplementedError):
-        graph.get(None)
-
-    with pytest.raises(NotImplementedError):
-        graph.add(None)
-
-    with pytest.raises(NotImplementedError):
-        graph.left_degree(None)
-
-    with pytest.raises(NotImplementedError):
-        graph.right_degree(None)
-
-    with pytest.raises(NotImplementedError):
-        graph.degree(None)
-
-
 def test_linear_path(linear_path, ksize, length):
     sequence = linear_path()
     assert len(sequence) == length
 
 
-def test_right_sea(right_sea, ksize, length):
-    top, bottom = right_sea()
-    assert len(top) == len(bottom)
-    assert len(top) == length + ksize
-    assert top[:ksize] == bottom[:ksize]
+def test_right_comb(right_comb, ksize, tip_length):
+    seqs = right_comb()
+    assert [len(s) for s in seqs[1:]] == [len(s) for s in seqs[:-1]]
+    assert len(seqs[0]) == ksize + tip_length
+    assert [s[:ksize] for s in seqs[1:]] == [s[:ksize] for s in seqs[:-1]]
+
+
+def test_left_comb(left_comb, ksize, tip_length):
+    seqs = left_comb()
+    assert [len(s) for s in seqs[1:]] == [len(s) for s in seqs[:-1]]
+    assert len(seqs[0]) == ksize + tip_length
+    assert [s[-ksize:] for s in seqs[1:]] == [s[-ksize:] for s in seqs[:-1]]
 
 
 def test_right_tip(right_tip, ksize, length):

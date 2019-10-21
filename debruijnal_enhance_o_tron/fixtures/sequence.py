@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# (c) Camille Scott, 2019
+# File   : sequence.py
+# License: MIT
+# Author : Camille Scott <camille.scott.w@gmail.com>
+# Date   : 20.05.2019
 import pytest
 
 from debruijnal_enhance_o_tron.sequence import (mutate_base,
@@ -7,6 +14,7 @@ from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 reads,
                                                 kmers,
                                                 revcomp)
+from debruijnal_enhance_o_tron.generators.generator import SequenceGenerator
 
 @pytest.fixture(params=[21, 51], ids=lambda k: 'K={0}'.format(k))
 def ksize(request):
@@ -54,6 +62,32 @@ def using_length(L):
                                        length,
                                        indirect=['length'],
                                        ids=lambda l: 'L={0}'.format(l))(fixture_func)
+    return wrapped
+
+
+@pytest.fixture(params=[1, None], ids=lambda l: 'L=K*2' if l is None else 'L=1')
+def tip_length(request, ksize):
+    if request.param is None:
+        return ksize * 2
+    else:
+        return request.param
+
+
+@pytest.fixture(params=[2,3,4], ids=lambda l: 'branches={0}'.format(l))
+def n_branches(request):
+    return request.param
+
+
+def using_n_branches(n):
+    def wrapped(fixture_func):
+        if isinstance(n, int):
+            N = [n]
+        else:
+            N = list(n)
+        return pytest.mark.parametrize('n_branches', 
+                                       N,
+                                       indirect=['n_branches'],
+                                       ids=lambda l: 'branches={0}'.format(l))(fixture_func)
     return wrapped
 
 
@@ -135,6 +169,12 @@ def using_pivot(P):
                                        ids=lambda l: 'pivot={0}'.format(l))(fixture_func)
     return wrapped
 
+
+@pytest.fixture
+def sequence_generator(request, ksize):
+    return SequenceGenerator(ksize)
+    
+    
 
 @pytest.fixture
 def random_sequence(request, ksize, length):

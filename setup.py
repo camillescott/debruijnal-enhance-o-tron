@@ -18,7 +18,7 @@ setup(
 
     url = 'https://github.com/camillescott/debruijnal-enhance-o-tron',
     description = 'pytest fixtures for testing de Bruin Graphs',
-    license = 'BSD-3-Clause',
+    license = 'MIT',
 
     packages = packages,
     zip_safe = False,

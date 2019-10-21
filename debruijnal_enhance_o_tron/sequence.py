@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# (c) Camille Scott, 2019
+# File   : sequence.py
+# License: MIT
+# Author : Camille Scott <camille.scott.w@gmail.com>
+# Date   : 18.07.2019
 import random
 
 complements = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'} 

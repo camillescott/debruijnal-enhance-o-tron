@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# (c) Camille Scott, 2019
+# File   : test_graph_adapter.py
+# License: MIT
+# Author : Camille Scott <camille.scott.w@gmail.com>
+# Date   : 20.05.2019
 from itertools import chain
 
 import pytest
@@ -6,43 +13,8 @@ from debruijnal_enhance_o_tron.fixtures import subgraphs
 from debruijnal_enhance_o_tron.fixtures.sequence import (using_ksize,
                                                          using_length)
 from debruijnal_enhance_o_tron.fixtures.collectors import (consume, check_fp)
+from debruijnal_enhance_o_tron.graph import GraphAdapter
 from debruijnal_enhance_o_tron.sequence import kmers, get_random_sequence
-
-
-class BaseGraph(subgraphs.GraphAdapter):
-    '''Super basic Graph implementation following the
-    provided `GraphAdapater` interface.
-    '''
-
-    def __init__(self, ksize, *args, **kwargs):
-        self.store = set()
-        self.ksize = ksize
-        super().__init__(*args, **kwargs)
-
-    def reset(self):
-        self.store.clear()
-
-    def shallow_clone(self):
-        other = BaseGraph(self.ksize)
-        return other
-
-    def get(self, item):
-        return item in self.store
-
-    def add(self, item):
-        if len(item) < self.ksize:
-            raise ValueError(item)
-        elif len(item) == self.ksize:
-            self.store.add(item)
-        else:
-            for kmer in kmers(item, self.ksize):
-                self.store.add(kmer)
-
-    def left_degree(self, item):
-        return sum((self.get(b + item[:-1]) for b in 'ACGT'))
-
-    def right_degree(self, item):
-        return sum((self.get(item[1:] + b) for b in 'ACGT'))
 
 
 
@@ -51,7 +23,7 @@ def graph(ksize):
     '''Test override of conftest-injected graph fixture.
     '''
 
-    return BaseGraph(ksize)
+    return GraphAdapter(ksize)
 
 
 def test_linear_path_noconsume(linear_path, graph, ksize, length):
@@ -71,25 +43,24 @@ def test_linear_path_consume(linear_path, graph, ksize, length, consume):
         assert graph.get(kmer)
 
 
-def test_right_sea_consume(right_sea, graph, ksize, length, consume):
-    top, bottom = right_sea()
+def test_right_comb_consume(right_comb, graph, ksize, tip_length, n_branches, consume):
+    seqs = right_comb()
     consume()
 
-    assert subgraphs.count_decision_nodes(top, graph, ksize) == {(0, 2): 1}
+    assert subgraphs.count_decision_nodes(seqs[0], graph, ksize) == {(0, n_branches): 1}
 
-    for kmer in chain(kmers(top, ksize),
-                      kmers(bottom, ksize)):
+    for kmer in chain(*(kmers(s, ksize) for s in seqs)):
+        print(kmer)
         assert graph.get(kmer)
 
 
-def test_left_sea_consume(left_sea, graph, ksize, length, consume):
-    top, bottom = left_sea()
+def test_left_comb_consume(left_comb, graph, ksize, tip_length, n_branches, consume):
+    seqs = left_comb()
     consume()
 
-    assert subgraphs.count_decision_nodes(top, graph, ksize) == {(2, 0): 1}
+    assert subgraphs.count_decision_nodes(seqs[0], graph, ksize) == {(n_branches, 0): 1}
 
-    for kmer in chain(kmers(top, ksize),
-                      kmers(bottom, ksize)):
+    for kmer in chain(*(kmers(s, ksize) for s in seqs)):
         assert graph.get(kmer)
 
 
@@ -230,6 +201,7 @@ def test_hourglass_tangle(hourglass_tangle, graph, ksize, length, consume):
     assert graph.right_degree(bottom[L:L+ksize]) == 2
 
 
+'''
 @using_ksize(5)
 @using_length(25)
 def test_triple_chain_tangle(triple_chain_tangle, graph, ksize, length, consume):
@@ -247,6 +219,7 @@ def test_triple_chain_tangle(triple_chain_tangle, graph, ksize, length, consume)
     assert graph.right_degree(top[L:L+ksize]) == 2
     assert graph.left_degree(bottom[L:L+ksize]) == 1
     assert graph.right_degree(bottom[L:L+ksize]) == 2
+'''
 
 
 def test_bowtie_tangle(bowtie_tangle, graph, ksize, length, consume):
@@ -333,8 +306,8 @@ def test_circular_consume(circular, graph, length, ksize, consume):
         assert graph.get(kmer)
 
 
-@using_ksize([7,9,11])
-@using_length([100] * 25)
+@using_ksize([11,13,15])
+@using_length(500)
 def test_sequence_generator_degree(graph, length, ksize, random_sequence):
     seqs = [random_sequence() for _ in range(10)]
     for seq in seqs:
@@ -351,7 +324,7 @@ def test_sequence_generator_degree(graph, length, ksize, random_sequence):
 
 
 @using_ksize([7,9,11])
-@using_length([100] * 25)
+@using_length(500)
 def test_sequence_generator_degree_with_fp(graph, length, ksize, linear_path, check_fp):
     seqs = [linear_path() for _ in range(10)]
     check_fp()

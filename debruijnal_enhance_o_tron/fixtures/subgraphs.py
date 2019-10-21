@@ -1,6 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# (c) Camille Scott, 2019
+# File   : subgraphs.py
+# License: MIT
+# Author : Camille Scott <camille.scott.w@gmail.com>
+# Date   : 20.05.2019
 import random
 import pytest
 
+from debruijnal_enhance_o_tron.graph import GraphAdapter
 from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 mutate_sequence,
                                                 mutate_position,
@@ -14,32 +22,6 @@ from debruijnal_enhance_o_tron.sequence import (mutate_base,
 from debruijnal_enhance_o_tron.fixtures.collectors import (consume_collector, check_fp_collector)
 from debruijnal_enhance_o_tron.fixtures.sequence import using_pivot
 
-
-class GraphAdapter(object):
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def get(self, item):
-        raise NotImplementedError()
-
-    def add(self, item):
-        raise NotImplementedError()
-
-    def left_degree(self, item):
-        raise NotImplementedError()
-
-    def right_degree(self, item):
-        raise NotImplementedError()
-
-    def reset(self):
-        raise NotImplementedError()
-
-    def shallow_clone(self):
-        raise NotImplementedError()
-
-    def degree(self, item):
-        return self.right_degree(item) + self.left_degree(item)
 
 
 def count_decision_nodes(sequence, graph, ksize):
@@ -65,19 +47,23 @@ def graph(ksize):
     support the methods from in the `GraphAdapter` interface.
     '''
 
-    return GraphAdapter()
+    return GraphAdapter(ksize)
 
 
 
 @pytest.fixture
-def linear_path(request, ksize, random_sequence, consume_collector, check_fp_collector):
+def linear_path(request, ksize, length, sequence_generator, 
+                consume_collector, check_fp_collector):
     '''Simple linear path graph structure.
 
     sequence
     [0]→o→o~~o→o→[-1]
     '''
     def _linear_path():
-        sequence = random_sequence()
+        try:
+            sequence = sequence_generator.random_unitig(length)
+        except ValueError:
+            pytest.xfail('Greedy dead-end in sequence generation.')
 
         consume_collector(sequence)
         check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {}))
@@ -88,7 +74,8 @@ def linear_path(request, ksize, random_sequence, consume_collector, check_fp_col
 
 
 @pytest.fixture
-def right_sea(request, ksize, random_sequence, consume_collector, check_fp_collector):
+def right_comb(request, ksize, tip_length, n_branches,
+               sequence_generator, consume_collector, check_fp_collector):
     '''Sets up a C shaped graph structure:
                 ([1:1+K])→o~~o→[-1] top
               ↗
@@ -99,54 +86,41 @@ def right_sea(request, ksize, random_sequence, consume_collector, check_fp_colle
     '''
 
     def _right_sea():
-        top = random_sequence()
-        bottom = random_sequence()
-        hdn = random_sequence(length=ksize)
-        top = hdn + top
-        bottom = list(hdn + bottom)
-        # make sure the HDN really is the HDN...
-        bottom[ksize] = mutate_base(top[ksize])
-        bottom = ''.join(bottom)
 
-        consume_collector(top, bottom)
-        check_fp_collector((lambda G : count_decision_nodes(top,
-                                                            G,
-                                                            ksize),
-                             {(0,2): 1}),
-                            (lambda G: count_decision_nodes(bottom,
-                                                            G,
-                                                            ksize),
-                             {(0,2): 1}))
+        root = sequence_generator.random_seed()
+        seqs = tuple(sequence_generator.random_branches(root,
+                                                        n_branches=n_branches,
+                                                        n_tail_kmers=tip_length)) 
 
-        return top, bottom
+        consume_collector(*seqs)
+        check_fp_collector(*((lambda G : count_decision_nodes(s,
+                                                              G,
+                                                              ksize),
+                              {(0, n_branches): 1}) for s in seqs))
+
+        return seqs
 
     return _right_sea
 
 
 @pytest.fixture
-def left_sea(request, ksize, random_sequence, consume_collector, check_fp_collector):
+def left_comb(request, ksize, tip_length, n_branches,
+              sequence_generator, consume_collector, check_fp_collector):
 
     def _left_sea():
-        top = random_sequence()
-        bottom = random_sequence()
-        hdn = random_sequence(length=ksize)
-        top = top + hdn
-        bottom = list(bottom + hdn)
-        # make sure the HDN really is the HDN...
-        bottom[-(ksize + 1)] = mutate_base(top[-(ksize+1)])
-        bottom = ''.join(bottom)
+        root = sequence_generator.random_seed()
+        seqs = tuple(sequence_generator.random_branches(root,
+                                                        n_branches=n_branches,
+                                                        fw=False,
+                                                        n_tail_kmers=tip_length)) 
 
-        consume_collector(top, bottom)
-        check_fp_collector((lambda G : count_decision_nodes(top,
-                                                            G,
-                                                            ksize),
-                             {(2,0): 1}),
-                            (lambda G: count_decision_nodes(bottom,
-                                                            G,
-                                                            ksize),
-                             {(2,0): 1}))
+        consume_collector(*seqs)
+        check_fp_collector(*((lambda G : count_decision_nodes(s,
+                                                              G,
+                                                              ksize),
+                              {(n_branches, 0): 1}) for s in seqs))
 
-        return top, bottom
+        return seqs
 
     return _left_sea
 
@@ -389,53 +363,6 @@ def hourglass_tangle(request, ksize, length, middle_pivot,
 
     return _hourglass_tangle
 
-
-@pytest.fixture
-def triple_chain_tangle(request, ksize, length, middle_pivot,
-                     linear_path, random_sequence,
-                     consume_collector, check_fp_collector):
-    '''
-    The triple chain tangle consists of two sequences, the "top" and "bottom,"
-    and has six decision k-mers: three in the top, neighboring each other,
-    and three in the bottom, neighboring each other as well, with the left decision
-    of the bottom sharing the right decision of the top as a neighbor,
-    and the right decision of the bottom having the left decision of the top as
-    a neighbor.
-
-        top                
-        [0]~~([pivot:pivot+K] L_top)→([pivot+1:pivot+1+K] R_top)~~o
-                                   ↘ ↗
-                                   ↗ ↘
-        [0]~~([pivot:pivot+K] L_bot)→([pivot+1:pivot+1+K] R_bot)~~o
-        bottom
-
-    L_top and L_bot have left-degree 1 and right-degree 2,
-    while R_top and R_bot have left-degree 2 and right-degree 1.
-    '''
-
-    def _triple_chain_tangle():
-        top = linear_path()
-        L = middle_pivot
-        decision_segment = top[L:L+ksize+1]
-        decision_segment = mutate_position(decision_segment, 0)
-        decision_segment = mutate_position(decision_segment, -1)
-        third_dsegment = top[L+3:L+3+ksize]
-        mutate_position(third_dsegment, -1)
-        decision_segment += third_dsegment
-
-        bottom = random_sequence(exclude=decision_segment)[:L] \
-                 + decision_segment
-        bottom += random_sequence(exclude=bottom)[:length-L-len(decision_segment)]
-
-        consume_collector(top, bottom)
-        check_fp_collector((lambda G: count_decision_nodes(top, G, ksize),
-                            {(1,2): 2, (2,1): 1}),
-                           (lambda G: count_decision_nodes(bottom, G, ksize),
-                            {(1,2): 1, (2,1): 2}))
-
-        return (top, bottom), L
-
-    return _triple_chain_tangle
 
 
 @pytest.fixture
