@@ -126,6 +126,31 @@ def left_comb(request, ksize, tip_length, n_branches,
 
 
 @pytest.fixture
+def full_decision(request, ksize, tip_length, n_branches, linear_path,
+                  sequence_generator, consume_collector, check_fp_collector):
+
+    def _full_decision():
+        root = sequence_generator.random_seed()
+        lseqs = tuple(sequence_generator.random_branches(root,
+                                                         n_branches=n_branches,
+                                                         fw=False,
+                                                         n_tail_kmers=tip_length))
+        rseqs = tuple(sequence_generator.random_branches(root,
+                                                         n_branches=n_branches,
+                                                         n_tail_kmers=tip_length))
+        
+        consume_collector(*lseqs, *rseqs)
+
+        core = lseqs[0] + rseqs[0][ksize:]
+        lseqs = [seq[:-1] for seq in lseqs[1:]]
+        rseqs = [seq[1:] for seq in rseqs[1:]]
+
+        return core, (lseqs, rseqs)
+
+    return _full_decision
+
+
+@pytest.fixture
 def right_tip(request, ksize, internal_pivot, random_sequence,
               consume_collector, check_fp_collector):
     '''
@@ -495,27 +520,6 @@ def suffix_circular(request, ksize, linear_path, consume_collector, check_fp_col
     def _suffix_circular():
         sequence = linear_path()
         sequence += sequence[:ksize-1]
-
-        consume_collector(sequence)
-        check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {}))
-
-        return sequence
-
-    return _suffix_circular
-
-
-@pytest.fixture
-def suffix_circular_tangle(request, ksize, length, suffix_circular, middle_pivot,
-                           random_sequence, consume_collector, check_fp_collector):
-
-    def _suffix_circular_tangle():
-        base = suffix_circular()
-        
-        L = middle_pivot
-        decision_segment = base[L:L+ksize+1]
-        decision_segment = mutate_position(decision_segment, 0)
-        decision_segment = mutate_position(decision_segment, -1)
-
         inducer = random_sequence(exclude=decision_segment)[:L] \
                  + decision_segment
         inducer += random_sequence(exclude=inducer)[:length-L-len(decision_segment)]
@@ -528,7 +532,7 @@ def suffix_circular_tangle(request, ksize, length, suffix_circular, middle_pivot
 
         return (base, inducer), L
 
-    return _suffix_circular_tangle
+    return _suffix_circular
 
 @pytest.fixture
 def circular_key(request, ksize, length, pivot,
