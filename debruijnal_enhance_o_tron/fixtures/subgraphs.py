@@ -515,11 +515,31 @@ def circular(request, ksize, linear_path, consume_collector, check_fp_collector)
     return _circular
 
 @pytest.fixture
-def suffix_circular(request, ksize, linear_path, consume_collector, check_fp_collector):
+def suffix_circular(request, ksize, linear_path, random_sequence, consume_collector, check_fp_collector):
 
     def _suffix_circular():
         sequence = linear_path()
         sequence += sequence[:ksize-1]
+
+        consume_collector(sequence)
+        check_fp_collector((lambda G: count_decision_nodes(sequence, G, ksize), {}))
+        
+        return sequence
+        
+    return _suffix_circular
+        
+
+@pytest.fixture
+def suffix_circular_tangle(request, ksize, length, suffix_circular, middle_pivot,
+                           random_sequence, consume_collector, check_fp_collector):
+ 
+    def _suffix_circular_tangle():
+        base = suffix_circular()
+        
+        L = middle_pivot
+        decision_segment = base[L:L+ksize+1]
+        decision_segment = mutate_position(decision_segment, 0)
+        decision_segment = mutate_position(decision_segment, -1)
         inducer = random_sequence(exclude=decision_segment)[:L] \
                  + decision_segment
         inducer += random_sequence(exclude=inducer)[:length-L-len(decision_segment)]
@@ -532,7 +552,8 @@ def suffix_circular(request, ksize, linear_path, consume_collector, check_fp_col
 
         return (base, inducer), L
 
-    return _suffix_circular
+    return _suffix_circular_tangle
+
 
 @pytest.fixture
 def circular_key(request, ksize, length, pivot,
