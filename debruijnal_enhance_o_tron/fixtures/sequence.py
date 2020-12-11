@@ -40,7 +40,7 @@ def using_ksize(K):
     return wrapped
 
 
-@pytest.fixture(params=[500, 1000], ids=lambda l: 'L={0}'.format(l))
+@pytest.fixture(params=[500], ids=lambda l: 'L={0}'.format(l))
 def length(request):
     '''
     Basic length fixture.
