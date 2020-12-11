@@ -16,7 +16,7 @@ from debruijnal_enhance_o_tron.sequence import (mutate_base,
                                                 revcomp)
 from debruijnal_enhance_o_tron.generators.generator import SequenceGenerator
 
-@pytest.fixture(params=[21, 51], ids=lambda k: 'K={0}'.format(k))
+@pytest.fixture(params=[21], ids=lambda k: 'K={0}'.format(k))
 def ksize(request):
     '''
     Core fixture to set the K parameter.
